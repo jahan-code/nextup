@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(uuid())
+  email             String             @unique
+  provider          Provider
+  password          String?
+  createdRooms      Room[]             @relation("RoomCreator")
+  roomMembers       RoomMember[]
+  addedRoomStreams  RoomStream[]
+  roomStreamUpvotes RoomStreamUpvote[]
+  skipVotes         SkipVote[]
+  Streams           Stream[]
+  upvotes           Upvote[]
+}
+
+model Stream {
+  id          String       @id @default(uuid())
+  type        StreamType
+  active      Boolean      @default(true)
+  UserId      String
+  url         String
+  extractedId String
+  bigImg      String       @default("")
+  smallImg    String       @default("")
+  title       String       @default("")
+  roomStreams RoomStream[]
+  user        User         @relation(fields: [UserId], references: [id])
+  upvotes     Upvote[]
+}
+
+model Upvote {
+  id       String @id @default(uuid())
+  UserId   String
+  StreamId String
+  Stream   Stream @relation(fields: [StreamId], references: [id])
+  user     User   @relation(fields: [UserId], references: [id])
+
+  @@unique([UserId, StreamId])
+}
+
+model Room {
+  id              String       @id @default(uuid())
+  name            String
+  description     String?
+  isPublic        Boolean      @default(true)
+  creatorId       String
+  currentStreamId String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  isPlaying       Boolean      @default(false)
+  lastSyncTime    DateTime?
+  playbackTime    Float?
+  creator         User         @relation("RoomCreator", fields: [creatorId], references: [id])
+  currentStream   RoomStream?  @relation("CurrentStream", fields: [currentStreamId], references: [id])
+  members         RoomMember[]
+  streams         RoomStream[] @relation("RoomStreams")
+
+  @@index([isPublic])
+  @@index([creatorId])
+}
+
+model RoomMember {
+  id       String         @id @default(uuid())
+  roomId   String
+  userId   String
+  role     RoomMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+  room     Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model RoomStream {
+  id             String             @id @default(uuid())
+  roomId         String
+  streamId       String
+  addedById      String
+  addedAt        DateTime           @default(now())
+  order          Int                @default(0)
+  currentInRooms Room[]             @relation("CurrentStream")
+  addedBy        User               @relation(fields: [addedById], references: [id])
+  room           Room               @relation("RoomStreams", fields: [roomId], references: [id], onDelete: Cascade)
+  stream         Stream             @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  upvotes        RoomStreamUpvote[]
+  skipVotes      SkipVote[]
+
+  @@unique([roomId, streamId])
+  @@index([roomId])
+  @@index([streamId])
+}
+
+model RoomStreamUpvote {
+  id           String     @id @default(uuid())
+  roomStreamId String
+  userId       String
+  createdAt    DateTime   @default(now())
+  roomStream   RoomStream @relation(fields: [roomStreamId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomStreamId, userId])
+  @@index([roomStreamId])
+  @@index([userId])
+}
+
+model SkipVote {
+  id           String     @id @default(uuid())
+  roomStreamId String
+  userId       String
+  createdAt    DateTime   @default(now())
+  roomStream   RoomStream @relation(fields: [roomStreamId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomStreamId, userId])
+  @@index([roomStreamId])
+  @@index([userId])
+}
+
+enum StreamType {
+  Spotify
+  Youtube
+}
+
+enum Provider {
+  Google
+  Email
+}
+
+enum RoomMemberRole {
+  CREATOR
+  MEMBER
+}

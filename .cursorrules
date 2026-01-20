@@ -1,0 +1,197 @@
+# Cursor Rules - Senior Developer Guidelines
+
+## Code Quality & Best Practices
+
+- Always write clean, maintainable, and production-ready code
+- Follow TypeScript best practices: use proper types, avoid `any`, leverage type inference
+- Prefer explicit over implicit - make code intentions clear
+- Write self-documenting code with meaningful variable and function names
+- Keep functions small and focused on a single responsibility
+- Use early returns to reduce nesting and improve readability
+- Always handle errors explicitly - never silently swallow exceptions
+
+## Error Handling
+
+- Always implement proper error handling with try-catch blocks
+- Return meaningful error messages to help with debugging
+- Log errors with context (use console.error with relevant details)
+- Use appropriate HTTP status codes (400, 401, 404, 500, etc.)
+- Validate input data before processing (use Zod or similar)
+- Handle edge cases and null/undefined values explicitly
+
+## TypeScript & Type Safety
+
+- Use strict TypeScript settings
+- Define proper interfaces/types for all data structures
+- Avoid type assertions (`as`) unless absolutely necessary
+- Use type guards and discriminated unions when appropriate
+- Leverage Prisma generated types instead of creating duplicate types
+- Use `unknown` instead of `any` when type is truly unknown
+
+## API Development
+
+- Follow RESTful conventions for API endpoints
+- Validate all request inputs using Zod schemas
+- Return consistent response formats across all endpoints
+- Include proper HTTP status codes
+- Document API endpoints in OpenAPI/Swagger
+- Handle authentication and authorization properly
+- Sanitize user inputs to prevent injection attacks
+
+## Database & Prisma
+
+- Always use Prisma Client from the generated location
+- Use transactions for operations that must succeed together
+- Handle database connection errors gracefully
+- Use proper indexes for frequently queried fields
+- Avoid N+1 query problems - use `include` or `select` appropriately
+- Validate foreign key relationships before creating records
+- Use `upsert` when appropriate to handle create-or-update scenarios
+
+## Next.js & React
+
+- Use Server Components by default, Client Components only when needed
+- Mark client components with `"use client"` directive
+- Use proper Next.js 13+ App Router patterns
+- Leverage Next.js built-in features (Image, Link, etc.)
+- Handle loading and error states in UI
+- Use proper React patterns (hooks, memoization when needed)
+- Avoid unnecessary re-renders
+
+## Security
+
+- Never expose sensitive data in error messages
+- Validate and sanitize all user inputs
+- Use environment variables for secrets (never commit them)
+- Implement proper authentication checks
+- Use HTTPS in production
+- Validate file uploads if applicable
+- Protect against SQL injection (Prisma handles this, but be aware)
+
+## Performance
+
+- Optimize database queries (avoid fetching unnecessary data)
+- Use pagination for large datasets
+- Implement proper caching strategies when appropriate
+- Minimize bundle size (avoid unnecessary dependencies)
+- Use async/await properly - don't block the event loop
+- Consider edge cases that might cause performance issues
+
+## Code Organization
+
+- Follow the existing project structure
+- Group related functionality together
+- Keep API routes focused and single-purpose
+- Extract reusable logic into utility functions
+- Use consistent naming conventions (camelCase for variables, PascalCase for components)
+- Organize imports: external packages first, then internal modules
+
+## Testing & Debugging
+
+- Write code that is testable (pure functions, dependency injection)
+- Add console.log/error statements for debugging when needed
+- Remove debug code before committing
+- Test edge cases and error scenarios
+- Verify error messages are helpful for debugging
+
+## Documentation
+
+- Write clear, concise comments for complex logic
+- Document function parameters and return types
+- Keep README and API docs up to date
+- Use JSDoc comments for public APIs
+- Explain "why" not "what" in comments
+
+## Git & Version Control
+
+- Write meaningful commit messages
+- Keep commits focused and atomic
+- Don't commit sensitive data or generated files
+- Use .gitignore appropriately
+
+## Dependencies
+
+- Prefer well-maintained, popular packages
+- Keep dependencies up to date
+- Avoid unnecessary dependencies
+- Check package size and impact on bundle
+- Use exact versions for critical dependencies when needed
+
+## Code Review Mindset
+
+- Think about maintainability - will this code be easy to understand in 6 months?
+- Consider scalability - will this work with 10x more data/users?
+- Think about edge cases - what could go wrong?
+- Consider the developer experience - is the API easy to use?
+- Review for security vulnerabilities
+- Check for performance bottlenecks
+
+## Project-Specific Guidelines
+
+- Use Prisma Client from `@/app/generated/prisma/client`
+- Use path aliases (`@/app/...`) for imports
+- Follow Next.js App Router conventions
+- Use Zod for schema validation
+- Use NextAuth for authentication
+- Keep API routes in `app/api/` directory
+- Use TypeScript strict mode
+
+## When Making Changes
+
+- Understand the full context before making changes
+- Check for existing patterns in the codebase
+- Maintain consistency with existing code style
+- Consider backward compatibility
+- Test changes thoroughly
+- Update related documentation
+- Check for breaking changes
+
+## Common Pitfalls to Avoid
+
+- Don't use `any` type - use proper types
+- Don't ignore errors - handle them properly
+- Don't create unnecessary abstractions
+- Don't optimize prematurely
+- Don't copy-paste code without understanding it
+- Don't commit commented-out code
+- Don't use magic numbers/strings - use constants
+- Don't create circular dependencies
+
+## Code Style
+
+- Use 2 spaces for indentation
+- Use semicolons consistently
+- Use single quotes for strings (or double quotes consistently)
+- Add trailing commas in objects/arrays
+- Use meaningful variable names (avoid abbreviations)
+- Keep line length reasonable (80-100 characters)
+
+## When Asked to Implement Features
+
+1. Understand requirements fully
+2. Check existing codebase for similar patterns
+3. Design the solution before coding
+4. Implement with proper error handling
+5. Test edge cases
+6. Update documentation
+7. Consider security implications
+8. Think about future extensibility
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
