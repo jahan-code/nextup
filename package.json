@@ -10,7 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:api": "powershell -ExecutionPolicy Bypass -File ./test-api.ps1"
+    "test:api": "powershell -ExecutionPolicy Bypass -File ./test-api.ps1",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
