@@ -19,9 +19,9 @@ export default function DashboardPage() {
     isPublic: boolean;
     currentStream: {
       stream: {
-        id: string;
-        title: string;
-        extractedId: string;
+    id: string;
+    title: string;
+    extractedId: string;
         bigImg: string;
         smallImg: string;
       };
@@ -151,7 +151,7 @@ export default function DashboardPage() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="text-indigo-400 animate-spin" size={32} />
-            </div>
+              </div>
           ) : rooms.length === 0 ? (
             <div className="bg-gray-800/30 rounded-xl border border-purple-500/20 p-8 text-center">
               <Video className="mx-auto mb-4 text-gray-500" size={48} />
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                         <Video className="text-gray-500" size={48} />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
                     <div className="absolute top-4 right-4 flex items-center gap-2">
                       {room.isPublic ? (
                         <div className="bg-indigo-500/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white flex items-center gap-1">
@@ -207,13 +207,13 @@ export default function DashboardPage() {
                         </div>
                       )}
                     </div>
-                  </div>
+                    </div>
 
                   {/* Room Info */}
                   <div className="p-6">
                     <h3 className="text-white font-bold text-lg mb-2 line-clamp-1 group-hover:text-indigo-400 transition-colors">
                       {room.name}
-                    </h3>
+                      </h3>
                     {room.description && (
                       <p className="text-gray-400 text-sm mb-4 line-clamp-2">{room.description}</p>
                     )}
@@ -230,12 +230,12 @@ export default function DashboardPage() {
                       </div>
                       <ExternalLink className="text-gray-400 group-hover:text-indigo-400 transition-colors" size={16} />
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
       </div>
     </div>
   );
