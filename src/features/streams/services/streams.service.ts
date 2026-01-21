@@ -1,5 +1,5 @@
 import { prismaClient } from "@/src/lib";
-import { StreamType } from "@/app/generated/prisma/enums";
+import { StreamType } from "@/app/generated/prisma/client";
 import getYouTubeId from "get-youtube-id";
 import { CreateStreamSchema, type CreateStreamInput } from "@/src/validation/streams";
 import type { StreamWithUpvotes, StreamListResponse } from "@/src/types/streams";
