@@ -47,6 +47,7 @@ jobs:
           NEXTAUTH_SECRET: test-secret
           NEXTAUTH_URL: http://localhost:3000
           NEXT_PUBLIC_ABLY_API_KEY: ${{ secrets.NEXT_PUBLIC_ABLY_API_KEY_TEST || 'test-key' }}
+        continue-on-error: false
 
   deploy-develop:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
