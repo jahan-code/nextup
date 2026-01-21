@@ -262,7 +262,7 @@ export default function RoomPage() {
             }
           }
         });
-      } catch (error) {
+            } catch (error) {
         if (!mounted) return;
         const errorMsg = `Failed to initialize YouTube player: ${error}`;
         serverLog(errorMsg);
@@ -628,7 +628,7 @@ export default function RoomPage() {
           const result = data.data || data;
           setRecommendedVideos(result.videos || []);
         }
-      } catch (error) {
+            } catch (error) {
         console.error('Error fetching recommended videos:', error);
       } finally {
         setIsLoadingRecommended(false);
@@ -1190,13 +1190,13 @@ export default function RoomPage() {
                           </button>
                         ))}
                       </div>
-                      <button
-                        onClick={() => setShowAddStream(true)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all flex items-center gap-2 font-semibold"
-                      >
-                        <Plus size={16} />
-                        Add Stream
-                      </button>
+                    <button
+                      onClick={() => setShowAddStream(true)}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all flex items-center gap-2 font-semibold"
+                    >
+                      <Plus size={16} />
+                      Add Stream
+                    </button>
                     </div>
                   )}
                   <button
@@ -1277,16 +1277,16 @@ export default function RoomPage() {
 
               <div className="p-6 flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold text-white mb-2">
-                    {room.currentStream.stream.title}
-                  </h2>
+                <h2 className="text-xl font-bold text-white mb-2">
+                  {room.currentStream.stream.title}
+                </h2>
                   {playerReady && (
                     <p className="text-green-400 text-sm flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                       Player Ready
                     </p>
                   )}
-                </div>
+              </div>
 
                 {isRoomMember && (
                   <div className="flex flex-col items-end gap-2">
@@ -1308,7 +1308,7 @@ export default function RoomPage() {
                           animate={{ width: `${(skipInfo.votes.length / skipInfo.threshold) * 100}%` }}
                           className="bg-red-500 h-full"
                         />
-                      </div>
+            </div>
                     )}
                     <span className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">
                       {skipInfo.votes.length} / {skipInfo.threshold} votes to skip
