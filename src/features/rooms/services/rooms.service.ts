@@ -1,5 +1,5 @@
 import { prismaClient } from "@/src/lib";
-import { RoomMemberRole } from "@/app/generated/prisma/enums";
+import { RoomMemberRole } from "@/app/generated/prisma/client";
 import { CreateRoomSchema, type CreateRoomInput } from "@/src/validation/rooms";
 import type { RoomWithDetails, RoomListResponse } from "@/src/types/rooms";
 import {
