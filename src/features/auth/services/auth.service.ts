@@ -1,4 +1,4 @@
-import { prismaClient } from "@/src/lib";
+import { prismaClient } from "@/src/lib/db-v3";
 import bcrypt from "bcryptjs";
 import { RegisterSchema, type RegisterInput } from "@/src/validation/auth";
 import type { RegisterResponse } from "@/src/types/auth";

@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser } from "@/src/lib/api/auth";
-import { validateRequest, getQueryParam } from "@/src/lib/api/validation";
+import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
+import { validateRequest } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { ValidationError } from "@/src/lib/api/errors/customErrors";
 import { UpvoteSchema } from "@/src/validation/streams";
 import { rateLimit, RateLimitConfig } from "@/src/lib/api/rateLimit";
 
@@ -17,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser();
     const data = await validateRequest(req, UpvoteSchema);
-    
+
     const upvote = await prismaClient.upvote.create({
       data: {
         UserId: user.id,
@@ -31,17 +30,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const creatorId = getQueryParam(req, "creatorId");
-    
-    if (!creatorId) {
-      throw new ValidationError("creatorId parameter is required");
-    }
+    const user = await getAuthenticatedUser();
 
     const streams = await prismaClient.stream.findMany({
       where: {
-        UserId: creatorId,
+        UserId: user.id,
       },
       include: {
         user: {

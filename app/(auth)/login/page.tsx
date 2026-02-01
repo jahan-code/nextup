@@ -45,7 +45,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-black">
       <Appbar />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <motion.div
@@ -54,17 +54,17 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="max-w-md mx-auto"
         >
-          <div className="bg-gray-800/60 backdrop-blur-sm border border-purple-500/20 rounded-xl p-8 shadow-2xl">
+          <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-600/30 rounded-xl p-8 shadow-2xl">
             <div className="text-center mb-8">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: 'spring' }}
-                className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-full mb-4"
+                className="inline-flex items-center justify-center w-16 h-16 bg-gray-600 rounded-full mb-4"
               >
                 <LogIn className="text-white" size={32} />
               </motion.div>
-              <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent mb-2">Welcome Back</h1>
               <p className="text-gray-400">Sign in to your account</p>
             </div>
 
@@ -91,7 +91,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-purple-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 focus:ring-2 focus:ring-gray-500/20 transition-all"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -109,7 +109,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-purple-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 focus:ring-2 focus:ring-gray-500/20 transition-all"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -118,7 +118,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
@@ -134,7 +134,7 @@ export default function LoginPage() {
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-purple-500/20"></div>
+                  <div className="w-full border-t border-gray-600/30"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-gray-800/60 text-gray-400">Or continue with</span>
@@ -169,7 +169,7 @@ export default function LoginPage() {
 
             <p className="mt-6 text-center text-sm text-gray-400">
               Don't have an account?{' '}
-              <a href="/signup" className="text-purple-400 hover:text-purple-300 font-medium">
+              <a href="/signup" className="text-gray-400 hover:text-gray-300 font-medium">
                 Sign up
               </a>
             </p>

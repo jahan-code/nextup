@@ -4,11 +4,13 @@ export interface RoomWithDetails extends Room {
   creator: {
     id: string;
     email: string;
+    image: string | null;
   };
   members: Array<RoomMember & {
     user: {
       id: string;
       email: string;
+      image: string | null;
     };
   }>;
   _count: {

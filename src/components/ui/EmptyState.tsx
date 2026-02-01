@@ -30,7 +30,7 @@ export default function EmptyState({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`text-center py-20 bg-gray-800/30 rounded-xl border border-purple-500/20 ${className}`}
+      className={`text-center py-20 bg-gray-800/60 rounded-xl border border-gray-600/30 ${className}`}
     >
       {Icon && (
         <motion.div
@@ -39,7 +39,7 @@ export default function EmptyState({
           transition={{ delay: 0.2, type: 'spring' }}
           className="flex justify-center mb-6"
         >
-          <div className="p-4 bg-gray-800/50 rounded-full">
+          <div className="p-4 bg-gray-800/60 rounded-full">
             <Icon className="text-gray-400" size={48} />
           </div>
         </motion.div>
@@ -63,8 +63,8 @@ export default function EmptyState({
                 onClick={action.onClick}
                 className={`px-6 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                   isPrimary
-                    ? 'bg-gradient-to-r from-indigo-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/50'
-                    : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700/70 border border-purple-500/20'
+                    ? 'bg-gray-600 text-white hover:bg-gray-500'
+                    : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700/70 border border-gray-600/30'
                 }`}
               >
                 {ActionIcon && <ActionIcon size={20} />}

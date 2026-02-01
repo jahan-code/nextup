@@ -33,7 +33,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-gray-950 border-t border-purple-500/20 relative">
+    <footer className="bg-black border-t border-gray-600/30 relative">
       {/* Background Pattern */}
       <div 
         className="absolute inset-0 opacity-5"
@@ -62,7 +62,7 @@ const Footer = () => {
                       aria-label={social.label}
                       whileHover={{ scale: 1.1, y: -2 }}
                       whileTap={{ scale: 0.95 }}
-                      className="w-10 h-10 rounded-lg bg-gray-800/50 border border-purple-500/20 flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/40 hover:bg-gray-800/70 transition-all"
+                      className="w-10 h-10 rounded-lg bg-gray-800/60 border border-gray-600/30 flex items-center justify-center text-gray-400 hover:text-white hover:border-gray-500/50 hover:bg-gray-800/80 transition-all"
                     >
                       <IconComponent size={20} />
                     </motion.a>
@@ -92,12 +92,12 @@ const Footer = () => {
           </div>
 
           {/* Bottom Bar */}
-          <div className="pt-8 border-t border-purple-500/20 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="pt-8 border-t border-gray-600/30 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
               © {currentYear} NextUp. All rights reserved.
             </p>
             <div className="flex items-center gap-2 text-gray-400 text-sm">
-              <Music size={16} className="text-purple-400" />
+              <Music size={16} className="text-gray-400" />
               <span>Made with passion for creators</span>
             </div>
           </div>

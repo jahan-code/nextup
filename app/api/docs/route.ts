@@ -17,20 +17,17 @@ const openapiSpec = {
     "/api/streams": {
       post: {
         summary: "Create a new stream",
-        description: "Creates a new YouTube stream entry",
+        description: "Creates a new YouTube stream entry. Requires authentication; creator is set from session.",
         tags: ["Streams"],
+        security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["creatorId", "url"],
+                required: ["url"],
                 properties: {
-                  creatorId: {
-                    type: "string",
-                    description: "UUID of the user creating the stream",
-                  },
                   url: {
                     type: "string",
                     format: "uri",
@@ -38,7 +35,6 @@ const openapiSpec = {
                   },
                 },
                 example: {
-                  creatorId: "123e4567-e89b-12d3-a456-426614174000",
                   url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 },
               },
@@ -91,25 +87,18 @@ const openapiSpec = {
               },
             },
           },
+          "401": {
+            description: "Unauthorized - authentication required",
+          },
           "404": {
-            description: "User not found - the creatorId does not exist in the database",
+            description: "User not found - the authenticated user does not exist in the database",
             content: {
               "application/json": {
                 schema: {
                   type: "object",
                   properties: {
-                    message: { 
-                      type: "string",
-                      example: "User not found"
-                    },
-                    error: {
-                      type: "string",
-                      example: "No user found with ID: 123e4567-e89b-12d3-a456-426614174000"
-                    },
-                  },
-                  example: {
-                    message: "User not found",
-                    error: "No user found with ID: 123e4567-e89b-12d3-a456-426614174000"
+                    message: { type: "string", example: "User not found" },
+                    error: { type: "string" },
                   },
                 },
               },

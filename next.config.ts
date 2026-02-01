@@ -1,3 +1,5 @@
+/** @type {import('next').NextConfig} */
+// Cache-Bust: 3.2 (Final Auth Fix)
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -51,6 +53,15 @@ const nextConfig: NextConfig = {
             ].join('; '),
           },
         ],
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      {
+        source: '/rooms',
+        destination: '/dashboard',
+        permanent: true,
       },
     ];
   },

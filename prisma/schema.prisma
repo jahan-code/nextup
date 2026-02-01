@@ -1,6 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
-  output        = "../app/generated/prisma"
+  output        = "../app/generated/prisma-v3"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
@@ -12,6 +12,7 @@ datasource db {
 model User {
   id                String             @id @default(uuid())
   email             String             @unique
+  image             String?
   provider          Provider
   password          String?
   createdRooms      Room[]             @relation("RoomCreator")

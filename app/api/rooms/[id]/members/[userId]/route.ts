@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser } from "@/src/lib/api/auth";
+import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { validateParams } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 import { AuthorizationError, NotFoundError } from "@/src/lib/api/errors/customErrors";

@@ -47,7 +47,7 @@ export default function ConfirmModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleBackdropClick}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
           />
 
           {/* Modal */}
@@ -56,7 +56,7 @@ export default function ConfirmModal({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-gray-800/95 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 max-w-md w-full shadow-2xl"
+              className="bg-gray-800/95 backdrop-blur-xl border border-gray-600/30 rounded-xl p-6 max-w-md w-full shadow-2xl"
             >
               {/* Header */}
               <div className="flex items-start gap-4 mb-4">

@@ -29,13 +29,13 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', showText = true, className = '
         {/* Background Circle with Gradient */}
         <defs>
           <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#6366f1" />
-            <stop offset="50%" stopColor="#8b5cf6" />
-            <stop offset="100%" stopColor="#ec4899" />
+            <stop offset="0%" stopColor="#6b7280" />
+            <stop offset="50%" stopColor="#4b5563" />
+            <stop offset="100%" stopColor="#6b7280" />
           </linearGradient>
           <linearGradient id="logoGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="100%" stopColor="#6366f1" />
+            <stop offset="0%" stopColor="#9ca3af" />
+            <stop offset="100%" stopColor="#6b7280" />
           </linearGradient>
         </defs>
         
@@ -82,7 +82,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', showText = true, className = '
 
       {/* Text */}
       {showText && (
-        <h1 className={`${dimensions.text} font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent`}>
+        <h1 className={`${dimensions.text} font-bold bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent`}>
           NextUp
         </h1>
       )}

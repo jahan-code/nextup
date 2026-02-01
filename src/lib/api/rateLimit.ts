@@ -123,4 +123,14 @@ export const RateLimitConfig = {
     limit: 100,
     window: 60 * 1000, // 100 requests per minute
   },
+  // YouTube API (search, recommendations) - protect quota
+  YOUTUBE: {
+    limit: 30,
+    window: 60 * 1000, // 30 requests per minute
+  },
+  // Log/sync telemetry - prevent flooding
+  LOG_SYNC: {
+    limit: 60,
+    window: 60 * 1000, // 60 requests per minute
+  },
 };

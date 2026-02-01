@@ -1,20 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import { validateRequest } from "@/src/lib/api/validation";
+import { handleApiError, successResponse } from "@/src/lib/api/errors";
+import { rateLimit, RateLimitConfig } from "@/src/lib/api/rateLimit";
+
+const LogSyncSchema = z.object({
+  userId: z.string().optional(),
+  role: z.string().optional(),
+  time: z.number().optional(),
+  state: z.string().optional(),
+  message: z.string().optional(),
+  debug: z
+    .object({
+      isMember: z.boolean().optional(),
+      isCreator: z.boolean().optional(),
+      hasPlayerRef: z.boolean().optional(),
+      hasStream: z.boolean().optional(),
+    })
+    .optional(),
+});
 
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { userId, role, time, state, message } = body;
+  const rateLimitResponse = rateLimit(req, RateLimitConfig.LOG_SYNC);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
-    if (message) {
-      console.log(`[BROWSER_LOG] User: ${userId?.slice(0, 5)}... | ${message}`);
+  try {
+    const body = await validateRequest(req, LogSyncSchema);
+
+    if (body.message) {
+      console.log(`[BROWSER_LOG] User: ${body.userId?.slice(0, 5)}... | ${body.message}`);
     } else {
-      // Print to server terminal with a visible tag
-      const debugStr = body.debug ? ` | isMember: ${body.debug.isMember} | isCreator: ${body.debug.isCreator} | hasRef: ${body.debug.hasPlayerRef} | hasStream: ${body.debug.hasStream}` : '';
-      console.log(`[SYNC_METRIC] User: ${userId?.slice(0, 5)}... [${role}] | Time: ${time?.toFixed(2)}s | State: ${state}${debugStr}`);
+      const debugStr = body.debug
+        ? ` | isMember: ${body.debug.isMember} | isCreator: ${body.debug.isCreator} | hasRef: ${body.debug.hasPlayerRef} | hasStream: ${body.debug.hasStream}`
+        : "";
+      console.log(
+        `[SYNC_METRIC] User: ${body.userId?.slice(0, 5)}... [${body.role}] | Time: ${body.time?.toFixed(2) ?? "?"}s | State: ${body.state ?? "?"}${debugStr}`
+      );
     }
 
-    return NextResponse.json({ success: true });
+    return successResponse({ success: true });
   } catch (error) {
-    return NextResponse.json({ success: false });
+    return handleApiError(error, "POST /api/log-sync");
   }
 }

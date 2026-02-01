@@ -4,7 +4,7 @@ import React from 'react';
 import { Music, Zap, Link2, BarChart3, LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Card3D, FeatureScene3D as FeatureScene3DComponent } from '@/src/components';
+import { Card3D } from '@/src/components';
 
 interface Feature {
   icon: LucideIcon;
@@ -19,7 +19,7 @@ const features: Feature[] = [
     icon: Music,
     title: 'Let Your Fans Choose',
     description: 'Give your audience the power to vote on which songs play next. Real-time voting keeps your stream interactive and engaging.',
-    gradient: 'from-indigo-500 to-purple-500',
+    gradient: 'from-gray-500 to-gray-600',
     image: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800&q=80',
   },
   {
@@ -40,27 +40,22 @@ const features: Feature[] = [
     icon: BarChart3,
     title: 'Track Popularity',
     description: 'See which songs your fans love most. Analytics help you understand your audience\'s music preferences.',
-    gradient: 'from-pink-500 to-rose-500',
+    gradient: 'from-gray-500 to-gray-600',
     image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
   },
 ];
 
 const Features = () => {
   return (
-    <section id="features" className="py-24 bg-gray-900 relative overflow-hidden">
+    <section id="features" className="py-24 bg-black relative overflow-hidden">
       {/* Background Pattern */}
       <div 
         className="absolute inset-0 opacity-5 z-0"
         style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
-          backgroundSize: '30px 30px',
+          backgroundSize: '40px 40px',
         }}
       ></div>
-      
-      {/* 3D Background Scene */}
-      <div className="absolute inset-0 opacity-30 z-0">
-        <FeatureScene3DComponent />
-      </div>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
@@ -71,7 +66,7 @@ const Features = () => {
           className="text-center mb-20"
         >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent">
               Powerful Features
             </span>
           </h2>
@@ -92,7 +87,7 @@ const Features = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="perspective-1000"
               >
-                <Card3D className="group bg-gray-800/60 backdrop-blur-sm border border-purple-500/20 rounded-xl overflow-hidden hover:border-purple-500/40 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 h-full">
+                <Card3D className="group bg-gray-800/60 backdrop-blur-sm border border-gray-600/30 rounded-xl overflow-hidden hover:border-gray-500/50 hover:shadow-2xl hover:shadow-gray-500/20 transition-all duration-300 h-full">
                   {/* Feature Image */}
                   <div className="relative h-48 w-full overflow-hidden">
                     <Image

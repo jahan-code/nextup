@@ -1,5 +1,5 @@
 // Rooms feature exports
-export { RoomsService } from './services/rooms.service';
+export { RoomPortal } from './services/room-portal.service';
 
 // Re-export types from centralized types
 export type { RoomWithDetails, RoomListResponse } from '@/src/types/rooms';

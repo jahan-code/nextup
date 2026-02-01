@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getAuthenticatedUser } from "@/src/lib/api/auth";
+import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 
 export async function GET(req: NextRequest) {

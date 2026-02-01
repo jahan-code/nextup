@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { handleApiError, successResponse } from "@/src/lib/api/errors";
 
 /**
  * Server time endpoint for clock synchronization
@@ -8,20 +8,12 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     const serverTime = Date.now();
-    
-    return NextResponse.json(
-      {
-        serverTime,
-        timestamp: serverTime,
-      },
-      { status: 200 }
-    );
+    return successResponse({
+      serverTime,
+      timestamp: serverTime,
+    });
   } catch (error) {
-    console.error('Error getting server time:', error);
-    return NextResponse.json(
-      { error: 'Failed to get server time' },
-      { status: 500 }
-    );
+    return handleApiError(error, "GET /api/time");
   }
 }
 

@@ -3,18 +3,17 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { Appbar } from '@/src/components';
-import { ThumbsUp, Loader2, Plus, Users, LogOut, Search, X, Play } from 'lucide-react';
+import { Appbar, SkeletonPlayer, SkeletonStreamCard, SkeletonListItem } from '@/src/components';
+import { ThumbsUp, Loader2, Plus, Users, LogOut, Search, X, Play, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { YouTubePlayer } from '@/src/types';
 import { PlayerState, type YouTubeVideo } from '@/src/types/youtube';
 import { useRoomAbly } from '@/src/hooks';
 import FloatingReactions from '@/src/components/rooms/FloatingReactions';
-import { loadYouTubeAPI, getPlayerStateName } from '@/src/lib/youtube/youtube-api.utils';
+import { useToast } from '@/src/components/ui/Toast';
 import {
-  subscribeToDebugInfo,
-  generateDiagnosticReport
-} from '@/src/lib/youtube/youtube-debug.utils';
+  getPlayerStateName
+} from '@/src/lib/youtube/youtube-api.utils';
 import { SYNC_THRESHOLDS, SYNC_INTERVALS, PLAYBACK_RATE } from '@/src/constants/rooms';
 interface RoomStream {
   id: string;
@@ -31,6 +30,7 @@ interface RoomStream {
   addedBy: {
     id: string;
     email: string;
+    image?: string | null;
   };
   upvoteCount: number;
   upvotes: Array<{ id: string; userId: string }>;
@@ -44,6 +44,7 @@ interface Room {
   creator: {
     id: string;
     email: string;
+    image?: string | null;
   };
   members: Array<{
     id: string;
@@ -51,6 +52,7 @@ interface Room {
     user: {
       id: string;
       email: string;
+      image?: string | null;
     };
     role: string;
   }>;
@@ -91,18 +93,9 @@ export default function RoomPage() {
   const [isLeaving, setIsLeaving] = useState(false);
   const [upvotedStreams, setUpvotedStreams] = useState<Set<string>>(new Set());
   const [isUpvoting, setIsUpvoting] = useState<string | null>(null);
-  const [showAddStream, setShowAddStream] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Array<{
-    id: string;
-    title: string;
-    url: string;
-    thumbnail: string;
-    channelTitle: string;
-  }>>([]);
-  const [reactions, setReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isAddingStream, setIsAddingStream] = useState(false);
+
+  const { addToast } = useToast();
+
   const [skipInfo, setSkipInfo] = useState<{ streamId: string | null, votes: string[], threshold: number }>({
     streamId: null,
     votes: [],
@@ -112,107 +105,41 @@ export default function RoomPage() {
   const [recommendedVideos, setRecommendedVideos] = useState<YouTubeVideo[]>([]);
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
 
+  // Cache for recommendations to avoid redundant API calls
+  const recommendationsCache = useRef<Map<string, YouTubeVideo[]>>(new Map());
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<YouTubeVideo[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // YouTube Player API ref (replaces iframe ref)
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
-  const [debugReport, setDebugReport] = useState<string>('');
-
-  // Debug subscription
-  useEffect(() => {
-    // Only subscribe if we're hitting errors or issues
-    if (playerError || !playerReady) {
-      const updateReport = () => setDebugReport(generateDiagnosticReport());
-      const unsubscribe = subscribeToDebugInfo(updateReport);
-      return unsubscribe;
-    }
-  }, [playerError, playerReady]);
 
   const lastSyncRef = useRef<{ time: number; timestamp: number; isPlaying: boolean } | null>(null);
   const isSyncingRef = useRef(false);
   const lastUpdateTimeRef = useRef<number>(0);
 
-  // UI Debug Logs
-  const [syncLogs, setSyncLogs] = useState<string[]>([]);
-  const addLog = useCallback((msg: string, data?: any) => {
-    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-    const logEntry = data ? `${timestamp} ${msg} ${JSON.stringify(data)}` : `${timestamp} ${msg}`;
-    setSyncLogs(prev => [logEntry, ...prev].slice(0, 50)); // Keep last 50 logs
-  }, []);
-
   // Store latest playback data from Ably messages to avoid stale state
   const latestPlaybackDataRef = useRef<{ playbackTime: number; isPlaying: boolean; timestamp: number; serverTimestamp?: number } | null>(null);
+
+  // Refs for real-time state access in event handlers
+  const isRoomCreatorRef = useRef(false);
+  const roomIsPlayingRef = useRef(false);
+  const updatePlaybackStateRef = useRef<any>(null);
 
   // Determine if user is creator or member
   const isRoomCreator = useMemo(() => room?.creator.id === userId, [room?.creator.id, userId]);
   const isRoomMember = useMemo(() => room?.members.some((m) => m.userId === userId) || false, [room?.members, userId]);
 
-  // TEMP: Report sync metrics to server for debugging
+  // Keep refs in sync
   useEffect(() => {
-    if (!roomId || !userId || !room || !playerReady) return;
-
-    const reportInterval = setInterval(() => {
-      const role = isRoomCreator ? 'CREATOR' : 'MEMBER';
-      let currentTime = 0;
-      let isPlayingStr = 'unknown';
-
-      if (isRoomCreator && playerRef.current) {
-        try {
-          currentTime = playerRef.current.getCurrentTime();
-          const state = playerRef.current.getPlayerState();
-          isPlayingStr = getPlayerStateName(state);
-        } catch (err) {
-          console.error('[SyncDebug] Error getting player state:', err);
-        }
-      } else {
-        // Member: Use dead reckoning from latest Ably update
-        if (latestPlaybackDataRef.current) {
-          const now = Date.now();
-          const state = latestPlaybackDataRef.current;
-          const elapsed = (now - state.timestamp) / 1000;
-          currentTime = state.isPlaying ? (state.playbackTime + elapsed) : state.playbackTime;
-          isPlayingStr = state.isPlaying ? 'PLAYING' : 'PAUSED';
-        }
-      }
-
-      // Send to server (fire and forget)
-      fetch('/api/log-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          role: isRoomCreator ? 'CREATOR' : 'MEMBER',
-          time: currentTime,
-          state: isPlayingStr,
-          debug: {
-            isMember: isRoomMember,
-            isCreator: isRoomCreator,
-            hasPlayerRef: !!playerRef.current,
-            playerReady,
-            hasRoom: !!room,
-            hasStream: !!room?.currentStream,
-          }
-        })
-      }).catch(() => { });
-
-    }, 2000);
-
-    return () => clearInterval(reportInterval);
-  }, [roomId, userId, isRoomCreator, isRoomMember, room?.currentStream, playerReady]);
-
-  // Helper to log to server from browser
-  const serverLog = useCallback((msg: string) => {
-    if (!userId) {
-      console.log(`[SyncDebug] (No User) ${msg}`);
-      return;
-    }
-    fetch('/api/log-sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, message: msg })
-    }).catch(() => { });
-    console.log(`[SyncDebug] ${msg}`);
-  }, [userId]);
+    isRoomCreatorRef.current = isRoomCreator;
+    roomIsPlayingRef.current = room?.isPlaying || false;
+  }, [isRoomCreator, room?.isPlaying]);
 
   // Initialize YouTube Player API
   useEffect(() => {
@@ -223,18 +150,15 @@ export default function RoomPage() {
 
     const initPlayer = async () => {
       try {
-        serverLog('Loading YouTube API...');
-        const YT = await loadYouTubeAPI();
+        const YT = await (await import('@/src/lib/youtube/youtube-api.utils')).loadYouTubeAPI();
 
         if (!mounted) return;
-
-        serverLog('YouTube API loaded, creating player...');
 
         // Create player
         player = new YT.Player('youtube-player', {
           videoId: room.currentStream!.stream.extractedId,
           playerVars: {
-            autoplay: 0,
+            autoplay: 1, // Auto-play when stream changes
             controls: 1,
             enablejsapi: 1,
             origin: window.location.origin,
@@ -244,28 +168,50 @@ export default function RoomPage() {
           events: {
             onReady: (event) => {
               if (!mounted) return;
-              serverLog('Player ready!');
               playerRef.current = event.target;
               setPlayerReady(true);
               setPlayerError(null);
             },
             onStateChange: (event) => {
               if (!mounted) return;
-              const stateName = getPlayerStateName(event.data);
-              serverLog(`Player state changed: ${stateName} (${event.data})`);
+
+              // Auto-play next video when current one ends
+              if (event.data === 0) { // VT.PlayerState.ENDED is 0
+                console.log('Video ended, attempting to play next...');
+                if (playNextStreamRef.current) {
+                  playNextStreamRef.current();
+                }
+              }
+
+              // Real-time Play/Pause Sync
+              if (isRoomCreatorRef.current) {
+                const isPlaying = event.data === PlayerState.PLAYING;
+                const isPaused = event.data === PlayerState.PAUSED;
+
+                if ((isPlaying || isPaused) && updatePlaybackStateRef.current) {
+                  const currentTime = event.target.getCurrentTime();
+                  console.log(`[Creator] State changed to ${isPlaying ? 'PLAYING' : 'PAUSED'}, broadcasting...`);
+                  updatePlaybackStateRef.current(currentTime, isPlaying, true);
+                }
+              } else {
+                // Member protection: If Host is paused, Member cannot manually play
+                if (event.data === PlayerState.PLAYING && !roomIsPlayingRef.current) {
+                  console.log('[Member] Host is paused, reverting manual play...');
+                  event.target.pauseVideo();
+                  addToast('The host has paused the video', 'info');
+                }
+              }
             },
             onError: (event) => {
               if (!mounted) return;
               const errorMsg = `Player error: ${event.data}`;
-              serverLog(errorMsg);
               setPlayerError(errorMsg);
             }
           }
         });
-            } catch (error) {
+      } catch (error) {
         if (!mounted) return;
         const errorMsg = `Failed to initialize YouTube player: ${error}`;
-        serverLog(errorMsg);
         setPlayerError(errorMsg);
       }
     };
@@ -274,7 +220,6 @@ export default function RoomPage() {
 
     return () => {
       mounted = false;
-      serverLog('Cleaning up player...');
       if (player) {
         try {
           player.destroy();
@@ -285,25 +230,62 @@ export default function RoomPage() {
       playerRef.current = null;
       setPlayerReady(false);
     };
-  }, [room?.currentStream?.stream.extractedId, serverLog]);
+  }, [room?.currentStream?.stream.extractedId]);
 
   // Ref for handlePlayStream to avoid circular dependency
   const handlePlayStreamRef = useRef<((streamId: string) => Promise<void>) | null>(null);
 
   // Ably real-time hook
-  console.log('[SYNC_DEBUG] RoomPage: Calling useRoomAbly', { roomId, isCreator: isRoomCreator || false, hasRoom: !!room, hasUserId: !!userId });
   const { isConnected, publishPlaybackUpdate, publishStreamChange, publishReaction, publishSkipUpdate } = useRoomAbly({
     roomId,
+    userId: userId,
+    userInfo: session?.user ? {
+      name: session.user.name || 'Anonymous',
+      image: session.user.image || null,
+    } : undefined,
     isCreator: isRoomCreator || false,
-    debugLog: addLog,
+    onPresenceUpdate: (data) => {
+      console.log('Presence update:', data);
+    },
     onSkipUpdate: (data) => {
       setSkipInfo(data);
-      if (data.threshold > 0 && data.votes.length >= data.threshold) {
-        addLog(`[Sync] Skip threshold reached! (${data.votes.length}/${data.threshold})`);
-        // If it's for current stream, it will be handled by stream:change or just wait for DB sync
+    },
+    onMemberJoined: (data) => {
+      console.log('Member joined:', data);
+      addToast(`${data.user.email || 'A user'} joined the room`, 'success');
+      fetchRoom();
+    },
+    onMemberLeft: (data) => {
+      console.log('Member left:', data);
+      // Refresh room to update member list
+      fetchRoom();
+
+      // Show notification
+      if (data.isCreator) {
+        addToast('The room creator has left', 'info');
       }
     },
-    onReaction: (data) => {
+    onCreatorTransferred: (data) => {
+      console.log('Creator transferred:', data);
+      addToast(`${data.newCreator.email} is now the room creator`, 'info');
+
+      // Refresh room to update creator and member roles
+      fetchRoom();
+    },
+    onRoomEnded: (data) => {
+      console.log('Room ended:', data);
+      const reason = data.reason === 'creator_left_alone'
+        ? 'The creator left the room'
+        : 'All members have left';
+
+      addToast(`Room ended: ${reason}`, 'error');
+
+      // Navigate back to dashboard after a brief delay
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+    },
+    /* onReaction: (data) => {
       setReactions(prev => [
         ...prev,
         {
@@ -312,7 +294,7 @@ export default function RoomPage() {
           x: 10 + Math.random() * 80 // random horizontal position 10% to 90%
         }
       ]);
-    },
+    }, */
     onPlaybackUpdate: (data) => {
       // Member receives playback update via Ably
       if (!isRoomCreator && playerRef.current && playerReady) {
@@ -337,13 +319,6 @@ export default function RoomPage() {
 
           const drift = Math.abs(actualTime - targetTime);
 
-          console.log('[SyncDebug] Ably Update:', {
-            targetTime,
-            actualTime,
-            drift: drift.toFixed(3),
-            latency: (latency / 1000).toFixed(3),
-            isPlaying: data.isPlaying
-          });
 
           // Adaptive sync based on drift
           if (drift > SYNC_THRESHOLDS.HARD_SYNC) {
@@ -423,7 +398,9 @@ export default function RoomPage() {
             serverTimestamp: data.serverTimestamp
           };
 
-          // Update room state
+          // Update refs and room state
+          roomIsPlayingRef.current = data.isPlaying;
+
           if (room) {
             setRoom(prev => prev ? ({
               ...prev,
@@ -440,76 +417,36 @@ export default function RoomPage() {
         if (!playerRef.current) reason.push('noPlayerRef');
         if (!playerReady) reason.push('playerNotReady');
 
-        console.log(`[SyncDebug] RoomPage skipping update. Reason: ${reason.join(', ')} | Creator: ${isRoomCreator} | PlayerRef: ${!!playerRef.current} | Ready: ${playerReady}`);
       }
     },
     onStreamChange: (streamId) => {
-      // Handle stream change via Ably
-      if (handlePlayStreamRef.current) {
-        handlePlayStreamRef.current(streamId);
-      }
+      // Find the stream in our current data
+      // Use functional update to access latest state without dependency
+      setRoom(prev => {
+        if (!prev) return null;
+
+        const nextStream = prev.streams.find(s => s.streamId === streamId);
+
+        // Optimistic update: Switch immediately without waiting for API
+        if (nextStream) {
+          return {
+            ...prev,
+            currentStream: {
+              id: nextStream.id,
+              stream: nextStream.stream
+            }
+          };
+        }
+        return prev;
+      });
+
+      // Still fetch to ensure consistency/receive full data, but UI should have already updated
+      fetchRoom();
     },
   });
 
 
 
-  // Sync Health Stats
-  const [syncStats, setSyncStats] = useState({
-    role: 'UNKNOWN',
-    isConnected: false,
-    playerState: 'UNKNOWN',
-    currentTime: 0,
-    lastUpdateAge: 0,
-    drift: 0,
-    latency: 0
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const player = playerRef.current;
-      const getPlayerStateString = (state: number | undefined): string => {
-        if (state === undefined) return 'NO_PLAYER';
-        switch (state) {
-          case -1: return 'UNSTARTED';
-          case 0: return 'ENDED';
-          case 1: return 'PLAYING';
-          case 2: return 'PAUSED';
-          case 3: return 'BUFFERING';
-          case 5: return 'CUED';
-          default: return `UNKNOWN(${state})`;
-        }
-      };
-
-      const stats = {
-        role: isRoomCreator ? 'CREATOR' : 'MEMBER',
-        isConnected,
-        playerState: player && typeof player.getPlayerState === 'function' ? getPlayerStateString(player.getPlayerState()) : 'NO_PLAYER',
-        currentTime: player && typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : 0,
-        lastUpdateAge: 0,
-        drift: 0,
-        latency: 0
-      };
-
-      const now = Date.now();
-      if (isRoomCreator) {
-        stats.lastUpdateAge = now - lastUpdateTimeRef.current;
-      } else if (latestPlaybackDataRef.current) {
-        stats.lastUpdateAge = now - latestPlaybackDataRef.current.timestamp;
-
-        // Calculate current drift estimate
-        if (player && typeof player.getCurrentTime === 'function') {
-          const targetTime = latestPlaybackDataRef.current.isPlaying
-            ? latestPlaybackDataRef.current.playbackTime + ((now - latestPlaybackDataRef.current.serverTimestamp!) / 1000)
-            : latestPlaybackDataRef.current.playbackTime;
-          stats.drift = Math.abs(player.getCurrentTime() - targetTime);
-          stats.latency = now - (latestPlaybackDataRef.current.serverTimestamp || now);
-        }
-      }
-
-      setSyncStats(stats);
-    }, 500);
-    return () => clearInterval(interval);
-  }, [isConnected, isRoomCreator, playerReady]);
 
   // Fetch room function (defined early for use in useEffects)
   const fetchRoom = useCallback(async () => {
@@ -520,7 +457,10 @@ export default function RoomPage() {
       });
       if (!response.ok) {
         if (response.status === 404) {
+          console.error('Room not found, redirecting to dashboard');
+          setRoom(null); // Clear room state to stop sync loops
           setError('Room not found');
+          router.push('/dashboard');
         } else {
           throw new Error('Failed to fetch room');
         }
@@ -529,7 +469,6 @@ export default function RoomPage() {
 
       const data = await response.json();
       setRoom(data);
-      serverLog(`Room Loaded: ${data.id} | Creator: ${data.creator.id} | MyId: ${userId} | isCreator: ${data.creator.id === userId}`);
       setError(null);
     } catch (error) {
       console.error('Error fetching room:', error);
@@ -539,7 +478,34 @@ export default function RoomPage() {
     } finally {
       setLoading(false);
     }
-  }, [roomId, userId, serverLog]); // DO NOT include room here, it causes infinite loops
+  }, [roomId, userId, router]); // DO NOT include room here, it causes infinite loops
+
+  // Removed automatic leave on unload/unmount to prevent accidental room deletion on refresh
+  // Users will remain in the room database until they explicitly click leave or a cleanup job runs
+  /* useEffect(() => {
+    const handleUnload = () => {
+      if (roomId && userId) {
+        // Use beacon API for reliable request on unload
+        const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
+        navigator.sendBeacon(`/api/rooms/${roomId}/leave`, blob);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      // Also leave when component unmounts (navigation)
+      // Note context: handleUnload logic is synchronous, so we can't await fetch here
+      // But for in-app navigation, we can fire and forget
+      if (roomId) {
+        fetch(`/api/rooms/${roomId}/leave`, {
+          method: 'POST',
+          keepalive: true
+        }).catch(err => console.error('Error leaving room:', err));
+      }
+    };
+  }, [roomId, userId]); */
 
   // Get user ID
   useEffect(() => {
@@ -619,6 +585,13 @@ export default function RoomPage() {
       return;
     }
 
+    // Check cache first
+    const cached = recommendationsCache.current.get(currentVideoId);
+    if (cached) {
+      setRecommendedVideos(cached);
+      return;
+    }
+
     const fetchRecommended = async () => {
       try {
         setIsLoadingRecommended(true);
@@ -626,9 +599,13 @@ export default function RoomPage() {
         if (response.ok) {
           const data = await response.json();
           const result = data.data || data;
-          setRecommendedVideos(result.videos || []);
+          const videos = result.videos || [];
+
+          // Cache the results
+          recommendationsCache.current.set(currentVideoId, videos);
+          setRecommendedVideos(videos);
         }
-            } catch (error) {
+      } catch (error) {
         console.error('Error fetching recommended videos:', error);
       } finally {
         setIsLoadingRecommended(false);
@@ -636,16 +613,131 @@ export default function RoomPage() {
     };
 
     fetchRecommended();
-  }, [room?.currentStream?.stream.extractedId]);
+
+    // Prefetch suggestions for the next video in queue (if exists)
+    // This makes switching to the next video feel instant
+    if (room?.streams && room.streams.length > 0) {
+      const sortedStreams = [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount);
+      const currentIndex = sortedStreams.findIndex(s => s.stream.extractedId === currentVideoId);
+      const nextStream = sortedStreams[currentIndex + 1];
+
+      if (nextStream && !recommendationsCache.current.has(nextStream.stream.extractedId)) {
+        // Prefetch in background (don't await)
+        fetch(`/api/youtube/related?videoId=${nextStream.stream.extractedId}`)
+          .then(res => res.json())
+          .then(data => {
+            const result = data.data || data;
+            const videos = result.videos || [];
+            recommendationsCache.current.set(nextStream.stream.extractedId, videos);
+          })
+          .catch(err => console.log('Prefetch failed:', err));
+      }
+    }
+  }, [room?.currentStream?.stream.extractedId, room?.streams]);
+
+  // Combine recommendations with voted songs from queue
+  const displayedSuggestions = useMemo(() => {
+    if (!room) return [];
+
+    // 1. Get all streams that have votes and are not currently playing
+    const votedStreams = (room.streams || [])
+      .filter(s =>
+        s.upvoteCount > 0 &&
+        s.stream.extractedId !== room.currentStream?.stream.extractedId
+      )
+      .map(s => ({
+        id: s.stream.extractedId,
+        title: s.stream.title,
+        thumbnail: s.stream.smallImg,
+        channelTitle: 'Trending in Room', // Generic label instead of adder's email
+        upvoteCount: s.upvoteCount
+      }));
+
+    // 2. Map recommended videos to include their upvoteCount if they exist in room streams
+    const recommendationsWithVotes = recommendedVideos.map(video => {
+      const existingStream = room.streams.find(s => s.stream.extractedId === video.id);
+      return {
+        ...video,
+        upvoteCount: existingStream?.upvoteCount || 0
+      };
+    });
+
+    // 3. Create a unique list, prioritizing richness of metadata (YouTube API data)
+    const uniqueMap = new Map();
+
+    // Add recommendations first (rich metadata)
+    recommendationsWithVotes.forEach(v => uniqueMap.set(v.id, v));
+
+    // Add/Merge voted streams from the queue
+    votedStreams.forEach(v => {
+      if (!uniqueMap.has(v.id)) {
+        uniqueMap.set(v.id, v);
+      } else {
+        // If it's already in recommendations, just ensure we have the highest vote count
+        const existing = uniqueMap.get(v.id);
+        if (v.upvoteCount > existing.upvoteCount) {
+          uniqueMap.set(v.id, { ...existing, upvoteCount: v.upvoteCount });
+        }
+      }
+    });
+
+    // 4. Return sorted list (voted first, then by vote count)
+    return Array.from(uniqueMap.values())
+      .filter(v => v.id !== room.currentStream?.stream.extractedId)
+      .sort((a, b) => (b.upvoteCount || 0) - (a.upvoteCount || 0));
+  }, [recommendedVideos, room?.streams, room?.currentStream?.stream.extractedId]);
+
+  // Handle search
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Handle both wrapped { data: { videos: [] } } and direct { videos: [] } formats
+        const result = data.data || data;
+        setSearchResults(result.videos || []);
+      }
+    } catch (error) {
+      console.error('Error searching videos:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchQuery) {
+      searchTimeoutRef.current = setTimeout(() => {
+        handleSearch(searchQuery);
+      }, 500);
+    } else {
+      setSearchResults([]);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, handleSearch]);
+
+
 
   // Update playback state (creator only) - no debouncing when playing for ultra-tight sync
   const updatePlaybackState = async (playbackTime: number, isPlaying: boolean, immediate = false) => {
     const isRoomCreatorCheck = room?.creator.id === userId;
 
     if (!roomId || !isRoomCreatorCheck) {
-      if (Math.random() < 0.05) { // Sample logs to avoid spamming
-        addLog(`[SyncDebug] updatePlaybackState ignored: RoomId=${!!roomId}, isCreator=${isRoomCreatorCheck} (UserId=${userId}, CreatorId=${room?.creator.id})`);
-      }
       return;
     }
 
@@ -653,7 +745,7 @@ export default function RoomPage() {
     const now = performance.now();
 
     // Throttle updates:
-    // - Immediate if requested
+    // - Immediate if requested (manual play/pause/seek)
     // - CREATOR_BROADCAST interval if playing (2s)
     // - 1s if paused
     const throttleInterval = isPlaying ? SYNC_INTERVALS.CREATOR_BROADCAST : 1000;
@@ -662,14 +754,11 @@ export default function RoomPage() {
     }
     lastUpdateTimeRef.current = now;
 
-    // Parallel updates: Send to Ably immediately (fire and forget), update DB in background
-    // Parallel updates: Send to Ably immediately (fire and forget), update DB in background
-
     // Send to Ably immediately
     publishPlaybackUpdate(playbackTime, isPlaying);
 
     // Update DB in parallel (don't block on it)
-    try {// Fire and forget DB update - don't wait for response
+    try {
       fetch(`/api/rooms/${roomId}/playback`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -679,8 +768,7 @@ export default function RoomPage() {
         if (!response.ok) {
           console.error('Failed to update playback state in DB');
         } else {
-          // Update last sync ref on success
-          lastSyncRef.current = { time: playbackTime, timestamp: now, isPlaying };
+          lastSyncRef.current = { time: playbackTime, timestamp: Date.now(), isPlaying };
         }
       }).catch((error) => {
         console.error('Error updating playback state in DB:', error);
@@ -689,6 +777,11 @@ export default function RoomPage() {
       console.error('Error updating playback state:', error);
     }
   };
+
+  // Keep updatePlaybackStateRef in sync
+  useEffect(() => {
+    updatePlaybackStateRef.current = updatePlaybackState;
+  }, [updatePlaybackState]);
 
   // Creator sends playback state updates
   useEffect(() => {
@@ -704,15 +797,9 @@ export default function RoomPage() {
     if (!roomId) return; // Silent return if no room
 
     // Only log if something important is missing
-    if (isRoomCreator && (!playerReady || !playerRef.current)) {
-      addLog(`[SyncDebug] Creator loop waiting: Ready=${playerReady}, Ref=${!!playerRef.current}`);
-    }
-
     if (!roomId || !room?.currentStream || !isRoomCreator || !playerReady || !playerRef.current) {
       return;
     }
-
-    addLog('[SyncDebug] Creator sync loop starting');
 
     let animationFrameId: number | null = null;
     let lastUpdateTime = 0;
@@ -739,22 +826,18 @@ export default function RoomPage() {
             timeDrift = Math.abs(currentTime - projectedTime);
           }
 
+          // Detect state change (Play <-> Pause)
+          const stateChanged = isPlaying !== lastSyncRef.current?.isPlaying;
+
           const shouldUpdate =
-            (isPlaying !== lastSyncRef.current?.isPlaying) ||
+            stateChanged ||
             !lastSyncRef.current ||
             (timeSinceLastUpdate >= SYNC_INTERVALS.CREATOR_BROADCAST) ||
             (timeDrift > 1.5); // Broadcast immediately if time jumps significantly (Seek)
 
           if (shouldUpdate) {
-            // Log only on explicit events (seek/pause/play) or very rarely
-            if (timeDrift > 1.5 || isPlaying !== lastSyncRef.current?.isPlaying) {
-              addLog(`[SyncDebug] Broadcast: ${isPlaying ? 'PLAY' : 'PAUSE'} @ ${currentTime.toFixed(2)}s (Drift: ${timeDrift.toFixed(3)}s)`);
-            } else if (Math.random() < 0.01) {
-              // Sample 1% of tick logs
-              console.log('[SyncDebug] Creator Broadcasting (Sampled):', { currentTime, isPlaying });
-            }
-
-            updatePlaybackState(currentTime, isPlaying, false);
+            // Force immediate update if state changed
+            updatePlaybackState(currentTime, isPlaying, stateChanged);
             lastSyncRef.current = { time: currentTime, timestamp: now, isPlaying };
             lastUpdateTime = now;
           }
@@ -822,16 +905,18 @@ export default function RoomPage() {
 
     try {
       setIsLeaving(true);
+      setError(null);
       const response = await fetch(`/api/rooms/${roomId}/leave`, {
         method: 'POST',
         credentials: 'include',
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (response.ok) {
         router.push('/rooms');
       } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to leave room');
+        setError(data.error || data.message || 'Failed to leave room');
       }
     } catch (error) {
       console.error('Error leaving room:', error);
@@ -841,116 +926,7 @@ export default function RoomPage() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    if (!searchQuery.trim()) return;
-
-    try {
-      setIsSearching(true);
-      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(searchQuery.trim())}`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data.videos || []);
-      }
-    } catch (error) {
-      console.error('Error searching YouTube:', error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleAddStream = async (video: {
-    id: string;
-    title: string;
-    url: string;
-    thumbnail: string;
-    channelTitle: string;
-  }) => {
-    if (!roomId) return;
-
-    try {
-      setIsAddingStream(true);
-      const response = await fetch(`/api/rooms/${roomId}/streams`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ url: video.url }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const result = data.data || data;
-        // The API returns RoomStream with stream.id, we need stream.id for handlePlayStream
-        const addedStreamId = result.stream?.id || result.streamId;
-
-        setSearchQuery('');
-        setSearchResults([]);
-        setShowAddStream(false);
-
-        // Refresh room data first
-        await fetchRoom();
-
-        // If there's no current stream, automatically set the newly added stream as current
-        if (addedStreamId && !room?.currentStream && handlePlayStreamRef.current) {
-          // Wait a bit for the room to update, then set as current
-          setTimeout(() => {
-            try {
-              handlePlayStreamRef.current?.(addedStreamId);
-            } catch (error) {
-              console.error('Error setting stream as current:', error);
-            }
-          }, 500);
-        }
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to add stream');
-      }
-    } catch (error) {
-      console.error('Error adding stream:', error);
-      setError('Failed to add stream. Please try again.');
-    } finally {
-      setIsAddingStream(false);
-    }
-  };
-
-  const handleRecommendUpvote = async (video: YouTubeVideo) => {
-    if (!roomId || !userId || isAddingStream) return;
-
-    try {
-      setIsAddingStream(true);
-
-      // Check if video is already in the room
-      const existingRoomStream = room?.streams.find(rs => rs.stream.extractedId === video.id);
-
-      if (existingRoomStream) {
-        // Just upvote it
-        await handleUpvote(existingRoomStream.streamId);
-      } else {
-        // Add it - the backend should handle the initial upvote
-        const response = await fetch(`/api/rooms/${roomId}/streams`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ url: video.url }),
-        });
-
-        if (response.ok) {
-          await fetchRoom();
-        } else {
-          const data = await response.json();
-          setError(data.error || 'Failed to add recommended video');
-        }
-      }
-    } catch (error) {
-      console.error('Error handling recommended upvote:', error);
-    } finally {
-      setIsAddingStream(false);
-    }
-  };
 
   const handleUpvote = async (streamId: string) => {
     if (!userId || !roomId || isUpvoting) return;
@@ -990,14 +966,35 @@ export default function RoomPage() {
       return;
     }
 
+    // Optimistic update: Switch stream immediately in local state
+    setRoom(prev => {
+      if (!prev) return null;
+
+      const targetStream = prev.streams.find(s => s.streamId === streamId);
+
+      if (targetStream) {
+        return {
+          ...prev,
+          currentStream: {
+            id: targetStream.id,
+            stream: targetStream.stream
+          }
+        };
+      }
+      return prev;
+    });
+
+    // Publish stream change via Ably immediately for real-time notification
+    publishStreamChange(streamId);
+
+    // Update server in background (don't block UI on this)
     try {
       const response = await fetch(`/api/rooms/${roomId}/streams/${streamId}/play`, {
         method: 'PUT',
         credentials: 'include',
       });
       if (response.ok) {
-        // Publish stream change via Ably for real-time notification
-        publishStreamChange(streamId);
+        // Fetch to ensure consistency, but UI already updated
         fetchRoom();
       }
     } catch (error) {
@@ -1035,7 +1032,6 @@ export default function RoomPage() {
         });
 
         if (result.shouldSkip) {
-          addLog('[Sync] Vote skip successful - switching streams');
           if (result.nextStreamId) {
             publishStreamChange(result.nextStreamId);
           }
@@ -1054,37 +1050,196 @@ export default function RoomPage() {
     handlePlayStreamRef.current = handlePlayStream;
   }, [handlePlayStream]);
 
-  const playNextStream = async () => {
+  const playNextStream = useCallback(async () => {
     if (!room || !room.streams.length) {
       return;
     }
 
     // Sort streams by upvote count
     const sortedStreams = [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount);
-    const nextStream = sortedStreams.find((rs) => rs.streamId !== room.currentStream?.stream.id) || sortedStreams[0]; if (nextStream) {
-      await handlePlayStream(nextStream.streamId);
+    const nextStream = sortedStreams.find((rs) => rs.streamId !== room.currentStream?.stream.id) || sortedStreams[0];
+
+    if (nextStream && handlePlayStreamRef.current) {
+      await handlePlayStreamRef.current(nextStream.streamId);
+    }
+  }, [room, roomId]); // Dependency on room is okay here as it's recreated, but we pass it to ref
+
+  // Ref for playNextStream to be used in player event listener
+  const playNextStreamRef = useRef<(() => Promise<void>) | null>(null);
+
+  useEffect(() => {
+    playNextStreamRef.current = playNextStream;
+  }, [playNextStream]);
+
+  // Helper to get upvoters for a video (from suggestions)
+  const getUpvotersForVideo = useCallback((videoId: string) => {
+    if (!room) return [];
+
+    // Check if this video is in the queue
+    const stream = room.streams.find(s => s.stream.extractedId === videoId);
+    if (!stream || !stream.upvotes || stream.upvotes.length === 0) return [];
+
+    // Map upvotes to member user data
+    return stream.upvotes.map(vote => {
+      const member = room.members.find(m => m.userId === vote.userId);
+      return member?.user;
+    }).filter(Boolean); // Type guard
+  }, [room]);
+
+  const handleRecommendUpvote = async (video: any) => {
+    if (!roomId) return;
+
+    // Check if video is already in queue
+    const existingStream = room?.streams.find(s => s.stream.extractedId === video.id);
+
+    // Creator: Play immediately (Add if needed -> Play)
+    if (isRoomCreator) {
+      if (existingStream) {
+        // Just play existing
+        handlePlayStream(existingStream.streamId);
+      } else {
+        // Optimistic Add + Play
+        const tempId = `temp-${video.id}`;
+
+        // Optimistic update
+        setRoom(prev => {
+          if (!prev) return null;
+          const optimisticStream = {
+            id: tempId,
+            streamId: tempId,
+            roomId: prev.id,
+            addedById: userId || '',
+            played: false,
+            playedAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            order: prev.streams.length + 1,
+            stream: {
+              id: tempId,
+              title: video.title,
+              url: `https://www.youtube.com/watch?v=${video.id}`,
+              extractedId: video.id,
+              bigImg: video.thumbnail?.url || video.thumbnail || '',
+              smallImg: video.thumbnail?.url || video.thumbnail || '',
+              type: 'Youtube' as const,
+              active: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              userId: userId || ''
+            },
+            addedBy: { id: userId || '', email: '' },
+            upvoteCount: 1, // Auto-vote
+            upvotes: [],
+            _count: { upvotes: 1 }
+          };
+
+          return {
+            ...prev,
+            streams: [...prev.streams, optimisticStream],
+            currentStream: {
+              id: tempId,
+              stream: optimisticStream.stream
+            }
+          };
+        });
+
+        // Publish stream change immediately (optimistic)
+        publishStreamChange(tempId);
+
+        try {
+          // Add to backend
+          const response = await fetch(`/api/rooms/${roomId}/streams`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${video.id}` })
+          });
+
+          if (response.ok) {
+            const newStream = await response.json();
+            const realStreamId = newStream.data.streamId; // get the real ID (Stream.id)
+
+            // Now play it properly with the real ID
+            await fetch(`/api/rooms/${roomId}/streams/${realStreamId}/play`, {
+              method: 'PUT',
+              credentials: 'include'
+            });
+
+            fetchRoom();
+          }
+        } catch (error) {
+          console.error('Error adding recommended video:', error);
+          fetchRoom(); // Revert on error
+        }
+      }
+      return;
+    }
+
+    // Member: Vote logic
+    if (existingStream) {
+      // Already exists -> Upvote it
+      handleUpvote(existingStream.streamId);
+    } else {
+      // Doesn't exist -> Add it (Backend now auto-upvotes)
+      try {
+        const response = await fetch(`/api/rooms/${roomId}/streams`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${video.id}` })
+        });
+
+        if (response.ok) {
+          addToast('Added to queue', 'success');
+          fetchRoom();
+        }
+      } catch (error) {
+        console.error('Error adding video:', error);
+        addToast('Failed to add video', 'error');
+      }
     }
   };
 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <Loader2 className="text-indigo-400 animate-spin" size={48} />
+      <div className="min-h-screen bg-black">
+        <Appbar />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="h-10 w-64 bg-gray-700/50 rounded animate-pulse mb-2" />
+            <div className="h-4 w-96 bg-gray-700/50 rounded animate-pulse mb-4" />
+            <div className="flex gap-4">
+              <div className="h-4 w-24 bg-gray-700/50 rounded animate-pulse" />
+              <div className="h-4 w-20 bg-gray-700/50 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="mb-8">
+            <SkeletonPlayer className="mb-6" />
+          </div>
+          <div>
+            <div className="h-8 w-36 bg-gray-700/50 rounded animate-pulse mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonStreamCard key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error && !room) {
     return (
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-black">
         <Appbar />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-6 text-center">
+          <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
             <p className="text-red-400">{error}</p>
             <button
               onClick={() => router.push('/rooms')}
-              className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
             >
               Back to Rooms
             </button>
@@ -1099,521 +1254,514 @@ export default function RoomPage() {
   // Sort streams by upvote count
   const sortedStreams = room.streams ? [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount) : [];
 
-  console.log('[SyncDebug] RoomPage Rendering', {
-    userId,
-    isCreator: isRoomCreator,
-    isMember: isRoomMember,
-    currentStream: room.currentStream?.stream.id,
-    hasPlayerRef: !!playerRef.current
-  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-[#1a1c2e] to-gray-900 pb-20 md:pb-0 md:pl-64">
+    <div className="min-h-screen bg-black text-gray-100 selection:bg-gray-500/30 selection:text-white pb-20 md:pb-0 overflow-x-hidden">
+      <Appbar />
+      {/* Dynamic Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gray-500/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-gray-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-gray-400/5 rounded-full blur-[100px]" />
+      </div>
 
       {/* Connection status indicator */}
-      {isConnected ? (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm z-50 flex items-center gap-2">
-          <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-          Connected
-        </div>
-      ) : (
-        <div className="fixed top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm z-50 flex items-center gap-2">
-          <span className="w-2 h-2 bg-white rounded-full"></span>
-          Connecting...
-        </div>
-      )}
+      <div className="fixed top-24 right-8 z-[100]">
+        {isConnected ? (
+          <div className="bg-black/40 backdrop-blur-md border border-green-500/30 text-green-400 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 shadow-lg shadow-green-500/5">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+            Connected
+          </div>
+        ) : (
+          <div className="bg-black/40 backdrop-blur-md border border-yellow-500/30 text-yellow-400 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 shadow-lg shadow-yellow-500/5">
+            <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-bounce"></span>
+            Connecting...
+          </div>
+        )}
+      </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <motion.div
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-12 py-10 max-w-[1400px]">
+        {/* Header Section */}
+        <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-12"
         >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
+            <div className="space-y-4 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2">
+                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                Live Session
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-bold tracking-tight bg-gradient-to-b from-white via-gray-200 to-gray-500 bg-clip-text text-transparent leading-tight flex items-center gap-3">
                 {room.name}
+                {isRoomCreator && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 p-1.5 rounded-xl shadow-lg shadow-yellow-500/5">
+                    <Crown size={20} className="text-yellow-500 fill-yellow-500/20" />
+                  </div>
+                )}
               </h1>
               {room.description && (
-                <p className="text-gray-400">{room.description}</p>
+                <p className="text-lg text-gray-400 font-medium leading-relaxed max-w-xl">
+                  {room.description}
+                </p>
               )}
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Users size={16} />
-                  {room._count.members} members
-                </span>
-                <span>{room._count.streams} streams</span>
+              <div className="flex items-center gap-6 pt-2">
+                <div className="flex -space-x-3 overflow-hidden">
+                  {room.members.slice(0, 5).map((member, i) => (
+                    <div key={i} className="relative inline-block h-8 w-8 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[10px] font-bold border border-white/10">
+                      {member.user.image ? (
+                        <img
+                          src={member.user.image}
+                          alt={member.user.email}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (
+                        member.user.email[0].toUpperCase()
+                      )}
+
+                      {member.userId === room.creator.id && (
+                        <div className="absolute -top-1 -right-1 z-20 bg-yellow-500 rounded-full p-0.5 border-2 border-black shadow-lg">
+                          <Crown size={8} className="text-black fill-black" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {room._count.members > 5 && (
+                    <div className="inline-block h-8 w-8 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[10px] font-bold border border-white/10">
+                      +{room._count.members - 5}
+                    </div>
+                  )}
+                </div>
+                <div className="h-4 w-px bg-white/10" />
+                <div className="flex items-center gap-2 text-sm text-gray-400 font-semibold">
+                  <Users size={16} className="text-gray-500" />
+                  <span>{room._count.members} Members</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400 font-semibold">
+                  <Search size={16} className="text-gray-500" />
+                  <span>{room._count.streams} Streams</span>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex flex-wrap items-center gap-3 lg:self-end">
               {!isRoomMember ? (
                 <button
                   onClick={handleJoin}
                   disabled={isJoining || !session}
-                  className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                  className="group relative px-8 py-4 bg-white text-black rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold"
                 >
-                  {isJoining ? (
-                    <>
-                      <Loader2 className="animate-spin" size={16} />
-                      Joining...
-                    </>
-                  ) : (
-                    'Join Room'
-                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="relative flex items-center gap-2 text-lg">
+                    {isJoining ? (
+                      <>
+                        <Loader2 className="animate-spin" size={20} />
+                        Joining...
+                      </>
+                    ) : (
+                      <>
+                        Join Room
+                        <Plus size={20} />
+                      </>
+                    )}
+                  </span>
                 </button>
               ) : (
-                <>
-                  {isRoomMember && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex bg-gray-800/80 backdrop-blur rounded-full px-4 py-1 border border-white/10 shadow-lg">
-                        {['❤️', '🔥', '👏', '😂', '😮', '💀'].map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => {
-                              if (userId) {
-                                publishReaction(emoji, userId);
-                                // Also add locally immediately for better UX
-                                setReactions(prev => [
-                                  ...prev,
-                                  {
-                                    id: `${Date.now()}-${Math.random()}`,
-                                    emoji,
-                                    x: 10 + Math.random() * 80
-                                  }
-                                ]);
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* <div className="flex items-center gap-1.5 p-1.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl">
+                    {['❤️', '🔥', '👏', '😂', '😮', '💀'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          if (userId) {
+                            publishReaction(emoji, userId);
+                            setReactions(prev => [
+                              ...prev,
+                              {
+                                id: `${Date.now()}-${Math.random()}`,
+                                emoji,
+                                x: 10 + Math.random() * 80
                               }
-                            }}
-                            className="hover:scale-125 transition-transform px-1 text-xl"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
+                            ]);
+                          }
+                        }}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 hover:scale-110 active:scale-95 transition-all text-xl grayscale-[0.5] hover:grayscale-0"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div> */}
+
+
+
+
+                  <div className="flex items-center gap-2">
+
                     <button
-                      onClick={() => setShowAddStream(true)}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all flex items-center gap-2 font-semibold"
+                      onClick={handleLeave}
+                      disabled={isLeaving}
+                      className="p-3.5 bg-gray-800/50 hover:bg-gray-700/50 border border-white/10 text-gray-400 rounded-2xl font-bold transition-all hover:scale-105"
+                      title="Leave room"
                     >
-                      <Plus size={16} />
-                      Add Stream
+                      <LogOut size={20} />
                     </button>
-                    </div>
-                  )}
-                  <button
-                    onClick={handleLeave}
-                    disabled={isLeaving || isRoomCreator}
-                    className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
-                    title={isRoomCreator ? "Creator cannot leave. Delete room instead." : "Leave room"}
-                  >
-                    <LogOut size={16} />
-                    Leave
-                  </button>
-                </>
+                  </div>
+                </div>
               )}
             </div>
           </div>
-        </motion.div>
+        </motion.header>
 
         {error && (
-          <div className="mb-4 bg-red-900/20 border border-red-500/50 rounded-lg p-4">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 font-semibold"
+          >
+            <X size={18} />
+            {error}
+          </motion.div>
         )}
 
         {/* Player Section */}
         {room.currentStream && (isRoomMember || isRoomCreator) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="bg-gray-800/60 backdrop-blur-sm border border-purple-500/20 rounded-xl overflow-hidden">
-              {/* YouTube Player Container */}
-              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                {playerError ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
-                    <div className="text-center p-6 max-w-2xl">
-                      <p className="text-red-400 mb-2 font-bold text-lg">Player Error</p>
-                      <p className="text-gray-300 mb-4">{playerError}</p>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 mb-16">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="xl:col-span-8 flex flex-col gap-6"
+            >
+              {/* Player Container */}
+              <div className="group relative">
+                {/* Ambient Glow */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-gray-500/20 via-white/5 to-gray-500/20 rounded-[2rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
 
-                      <button
-                        onClick={() => window.location.reload()}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md mb-4 transition-colors"
-                      >
-                        Reload Page
-                      </button>
-
-                      {/* Diagnostic Info */}
-                      <details className="text-left bg-gray-950 p-4 rounded-lg border border-gray-800 text-xs overflow-auto max-h-60 w-full">
-                        <summary className="cursor-pointer text-gray-400 font-mono mb-2 hover:text-white">
-                          Show Diagnostic Report
-                        </summary>
-                        <pre className="text-gray-500 whitespace-pre-wrap font-mono">
-                          {debugReport || 'Loading diagnostics...'}
-                        </pre>
-                      </details>
+                <div className="relative aspect-video rounded-[2rem] overflow-hidden bg-black shadow-2xl border border-white/10">
+                  {playerError ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-950 z-10 p-8 text-center">
+                      <div className="space-y-6">
+                        <div className="inline-flex p-4 bg-red-500/10 rounded-3xl">
+                          <X size={48} className="text-red-500" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-white mb-2">Something went wrong</h3>
+                          <p className="text-gray-400 max-w-md mx-auto">{playerError}</p>
+                        </div>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-8 py-3 bg-white text-black rounded-2xl font-bold hover:scale-105 transition-all shadow-xl shadow-white/5"
+                        >
+                          Reload Session
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : !playerReady ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                    <div className="text-center">
-                      <Loader2 className="text-indigo-400 animate-spin mx-auto mb-2" size={32} />
-                      <p className="text-gray-400 text-sm">Loading player...</p>
+                  ) : (
+                    <div
+                      className={`absolute inset-0 bg-gray-900 overflow-hidden flex items-center justify-center transition-opacity duration-500 z-10 ${!playerReady ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                    >
+                      <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-12 h-12 text-white/20 animate-spin" />
+                        <p className="text-white/20 font-bold tracking-widest text-xs uppercase animate-pulse">Initializing Interface</p>
+                      </div>
                     </div>
-                  </div>
-                ) : null}
-                {/* Div that will be replaced by YT.Player */}
-                <div
-                  id="youtube-player"
-                  className="absolute top-0 left-0 w-full h-full"
-                />
-
-                {/* Floating Reactions Overlay */}
-                <FloatingReactions
-                  reactions={reactions}
-                  onComplete={(id) => setReactions(prev => prev.filter(r => r.id !== id))}
-                />
-              </div>
-
-              <div className="p-6 flex justify-between items-start">
-                <div>
-                <h2 className="text-xl font-bold text-white mb-2">
-                  {room.currentStream.stream.title}
-                </h2>
-                  {playerReady && (
-                    <p className="text-green-400 text-sm flex items-center gap-2">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                      Player Ready
-                    </p>
                   )}
+
+                  <div
+                    id="youtube-player"
+                    className="absolute top-0 left-0 w-full h-full"
+                  />
+
+                  {/* Floating Reactions Overlay */}
+                  {/* <div className="pointer-events-none absolute inset-0 z-50">
+                    <FloatingReactions
+                      reactions={reactions}
+                      onComplete={(id) => setReactions(prev => prev.filter(r => r.id !== id))}
+                    />
+                  </div> */}
+                </div>
               </div>
 
-                {isRoomMember && (
-                  <div className="flex flex-col items-end gap-2">
+              {/* Player Info Card */}
+              <div className="p-8 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] flex flex-col sm:flex-row justify-between items-start gap-6 shadow-xl">
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold text-white tracking-tight leading-snug">
+                    {room.currentStream.stream.title}
+                  </h2>
+                  <div className="flex items-center gap-4">
+                    {playerReady && (
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20 text-[10px] font-bold uppercase tracking-wider text-green-500">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        Synchronized
+                      </div>
+                    )}
+                    <div className="h-4 w-px bg-white/10" />
                     <button
-                      onClick={handleSkipVote}
-                      disabled={isVotingToSkip}
-                      className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-semibold ${skipInfo.votes.includes(userId || '')
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/50'
-                        : 'bg-gray-700 text-white hover:bg-gray-600'
+                      onClick={() => handleUpvote(room.currentStream!.stream.id)}
+                      disabled={isUpvoting === room.currentStream!.stream.id || !userId}
+                      className={`group flex items-center gap-2.5 px-5 py-2 rounded-xl border transition-all font-bold ${upvotedStreams.has(room.currentStream!.stream.id)
+                        ? 'bg-white/10 border-white/20 text-white'
+                        : 'bg-white text-black border-transparent hover:scale-105 active:scale-95'
                         }`}
                     >
-                      <LogOut size={16} className="rotate-90" />
-                      {skipInfo.votes.includes(userId || '') ? 'Voted to Skip' : 'Vote to Skip'}
+                      <ThumbsUp size={18} className={upvotedStreams.has(room.currentStream!.stream.id) ? 'fill-white' : ''} />
+                      <span>{room.streams.find(rs => rs.streamId === room.currentStream!.stream.id)?.upvoteCount ?? 0}</span>
                     </button>
-                    {skipInfo.votes.length > 0 && (
-                      <div className="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden border border-gray-800">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(skipInfo.votes.length / skipInfo.threshold) * 100}%` }}
-                          className="bg-red-500 h-full"
-                        />
-            </div>
-                    )}
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">
-                      {skipInfo.votes.length} / {skipInfo.threshold} votes to skip
-                    </span>
                   </div>
-                )}
+                </div>
+
+                <div className="flex flex-col items-end gap-3 w-full sm:w-auto self-end sm:self-center">
+                  <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                    <span>Vote Skip Status</span>
+                    <span className="text-white ml-auto">{skipInfo.votes.length} / {skipInfo.threshold}</span>
+                  </div>
+                  <div className="w-full sm:w-64 bg-white/5 rounded-full h-2 overflow-hidden border border-white/5 p-0.5">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(skipInfo.votes.length / skipInfo.threshold) * 100}%` }}
+                      className="bg-red-500 h-full rounded-full shadow-[0_0_12px_rgba(239,68,68,0.4)]"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSkipVote}
+                    disabled={isVotingToSkip}
+                    className={`group w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all ${skipInfo.votes.includes(userId || '')
+                      ? 'bg-red-500/10 text-red-500 border border-red-500/20 cursor-default'
+                      : 'bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20'
+                      }`}
+                  >
+                    <LogOut size={16} className="rotate-90 group-hover:translate-x-1 transition-transform" />
+                    {skipInfo.votes.includes(userId || '') ? 'Voted' : 'Skip Next'}
+                  </button>
+                </div>
               </div>
+            </motion.div>
 
-              {/* Recommended Videos Section */}
-              {recommendedVideos.length > 0 && (
-                <div className="border-t border-purple-500/10 p-6 bg-gray-900/40">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Recommended for You</h3>
-                  </div>
-                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-                    {recommendedVideos.map((video) => (
-                      <motion.div
-                        key={video.id}
-                        whileHover={{ y: -4 }}
-                        className="flex-shrink-0 w-48 group cursor-pointer"
-                        onClick={() => handleRecommendUpvote(video)}
-                      >
-                        <div className="relative aspect-video rounded-lg overflow-hidden mb-2 border border-gray-700 group-hover:border-indigo-500/50 transition-colors">
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="bg-indigo-600 p-2 rounded-full transform scale-90 group-hover:scale-100 transition-transform">
-                              <ThumbsUp size={16} className="text-white fill-white" />
-                            </div>
-                          </div>
-                          {video.duration && (
-                            <span className="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1 rounded text-white font-mono">
-                              {video.duration}
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-xs font-medium text-gray-200 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors">
-                          {video.title}
-                        </h4>
-                        <p className="text-[10px] text-gray-500 mt-1 line-clamp-1">{video.channelTitle}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Add Stream Modal */}
-        {/* Sync Debug logs - Visible for dev/testing */}
-        <div className="mb-8 p-4 bg-gray-900 border border-gray-800 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-gray-400 text-sm font-semibold">Sync Debug Logs</h3>
-            <button
-              onClick={() => setSyncLogs([])}
-              className="text-xs text-red-400 hover:text-red-300 pointer-events-auto"
-            >
-              Clear Logs
-            </button>
-          </div>
-
-          {/* Sync Health Dashboard */}
-          <div className="mb-4 grid grid-cols-4 gap-2 text-xs font-mono bg-black/40 p-2 rounded border border-gray-800">
-            <div className="flex flex-col">
-              <span className="text-gray-500">ROLE</span>
-              <span className={isRoomCreator ? "text-purple-400" : "text-blue-400"}>
-                {syncStats.role}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-gray-500">CONNECTION</span>
-              <span className={syncStats.isConnected ? "text-green-400" : "text-red-400"}>
-                {syncStats.isConnected ? 'ONLINE' : 'OFFLINE'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-gray-500">PLAYER</span>
-              <span className="text-white">{syncStats.playerState}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-gray-500">TIME</span>
-              <span className="text-white">{typeof syncStats.currentTime === 'number' ? syncStats.currentTime.toFixed(2) : '0.00'}s</span>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-gray-500">{isRoomCreator ? 'LAST SENT' : 'LAST RECV'}</span>
-              <span className={syncStats.lastUpdateAge < 2000 ? "text-green-400" : "text-red-400"}>
-                {syncStats.lastUpdateAge > 0 ? `${(syncStats.lastUpdateAge / 1000).toFixed(1)}s ago` : 'NEVER'}
-              </span>
-            </div>
-            {!isRoomCreator && (
-              <>
-                <div className="flex flex-col">
-                  <span className="text-gray-500">DRIFT</span>
-                  <span className={syncStats.drift < 0.2 ? "text-green-400" : syncStats.drift < 1.0 ? "text-yellow-400" : "text-red-400"}>
-                    {syncStats.drift.toFixed(3)}s
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-gray-500">LATENCY</span>
-                  <span className="text-gray-300">
-                    {(syncStats.latency).toFixed(0)}ms
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="h-48 overflow-y-auto font-mono text-xs text-gray-400 bg-black/50 p-2 rounded">
-            {syncLogs.length === 0 ? (
-              <div className="text-gray-600 italic">No sync logs captured yet...</div>
-            ) : (
-              syncLogs.map((log, i) => (
-                <div key={i} className="mb-0.5 border-b border-gray-800/50 pb-0.5">
-                  <span className="text-blue-500 mr-2">{log.split(' ')[0]}</span>
-                  <span className={log.includes('skipping') ? 'text-yellow-500' : log.includes('publishPlaybackUpdate') ? 'text-green-500' : 'text-gray-300'}>
-                    {log.substring(log.indexOf(' '))}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {showAddStream && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowAddStream(false)}
-          >
+            {/* Sidebar / Recommended and Queue Summary */}
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-gray-800 border border-purple-500/20 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="xl:col-span-4 flex flex-col gap-8"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-bold text-white">Add Stream to Room</h3>
-                <button
-                  onClick={() => setShowAddStream(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X size={24} />
-                </button>
-              </div>
+              {/* Recommendations */}
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col h-full max-h-[460px] shadow-2xl">
+                {/* Search Header */}
+                <div className="p-6 border-b border-white/10 bg-white/[0.02] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white tracking-tight">
+                      {searchQuery ? 'Search Results' : 'Smart Suggestions'}
+                    </h3>
+                    {!searchQuery && (
+                      <div className="px-2 py-0.5 bg-gray-500/20 rounded-md text-[10px] font-bold text-gray-400">BETA</div>
+                    )}
+                  </div>
 
-              <form onSubmit={handleSearch} className="mb-4">
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search size={16} className="text-gray-500 group-focus-within:text-white transition-colors" />
+                    </div>
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search YouTube videos..."
-                      className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-purple-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50"
-                      disabled={isSearching}
+                      placeholder="Search for videos..."
+                      className="block w-full pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all font-medium"
                     />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isSearching || !searchQuery.trim()}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {isSearching ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                  </button>
-                </div>
-              </form>
-
-              {searchResults.length > 0 && (
-                <div className="space-y-2">
-                  {searchResults.map((video) => (
-                    <div
-                      key={video.id}
-                      className="flex items-center gap-4 p-3 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 cursor-pointer"
-                      onClick={() => handleAddStream(video)}
-                    >
-                      <img
-                        src={video.thumbnail}
-                        alt={video.title}
-                        className="w-24 h-16 object-cover rounded flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm line-clamp-2">{video.title}</h4>
-                        <p className="text-gray-400 text-xs">{video.channelTitle}</p>
-                      </div>
+                    {searchQuery && (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddStream(video);
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSearchResults([]);
                         }}
-                        disabled={isAddingStream}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
                       >
-                        {isAddingStream ? (
-                          <Loader2 className="animate-spin" size={16} />
-                        ) : (
-                          <>
-                            <Plus size={16} />
-                            Add
-                          </>
-                        )}
+                        <X size={14} className="text-gray-500 hover:text-white transition-colors" />
                       </button>
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
 
-        {/* Stream Queue */}
-        {(isRoomMember || isRoomCreator) && (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">Stream Queue</h2>
-            {sortedStreams.length === 0 ? (
-              <div className="text-center py-12 bg-gray-800/30 rounded-xl border border-purple-500/20">
-                <p className="text-gray-400">No streams in queue. Add some to get started!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedStreams.map((roomStream, index) => (
-                  <motion.div
-                    key={roomStream.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className={`bg-gray-800/60 backdrop-blur-sm border rounded-xl overflow-hidden transition-all ${room.currentStream?.stream.id === roomStream.stream.id
-                      ? 'border-green-500/50 shadow-lg shadow-green-500/20'
-                      : 'border-purple-500/20 hover:border-purple-500/40'
-                      }`}
-                  >
-                    <div className="relative h-32 overflow-hidden">
-                      <img
-                        src={roomStream.stream.bigImg || roomStream.stream.smallImg || '/placeholder.jpg'}
-                        alt={roomStream.stream.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${roomStream.stream.extractedId}/maxresdefault.jpg`;
-                        }}
-                      />
-                      {room.currentStream?.stream.id === roomStream.stream.id && (
-                        <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                          <span className="text-green-400 font-semibold">Now Playing</span>
-                        </div>
-                      )}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                  {isSearching ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
+                      <Loader2 className="animate-spin" size={24} />
+                      <span className="text-xs font-bold uppercase tracking-wider">Searching...</span>
                     </div>
-                    <div className="p-4">
-                      <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2">
-                        {roomStream.stream.title}
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        <button
-                          onClick={() => handleUpvote(roomStream.streamId)}
-                          disabled={isUpvoting === roomStream.streamId || !userId}
-                          className={`px-3 py-1 rounded-full flex items-center gap-2 transition-all disabled:opacity-50 ${upvotedStreams.has(roomStream.streamId)
-                            ? 'bg-pink-500/20 border border-pink-500/50'
-                            : 'bg-gray-900/80'
+                  ) : searchQuery ? (
+                    searchResults.length > 0 ? (
+                      searchResults.map((video) => (
+                        <motion.div
+                          key={video.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ scale: 1.02, x: 4 }}
+                          onClick={() => handleRecommendUpvote(video)}
+                          className="group flex gap-4 p-3 bg-white/[0.02] hover:bg-white/[0.08] border border-white/[0.05] hover:border-white/10 rounded-2xl cursor-pointer transition-all active:scale-95"
+                        >
+                          <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                            <img
+                              src={video.thumbnail}
+                              alt={video.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Plus size={20} className="text-white transform scale-50 group-hover:scale-100 transition-transform" />
+                            </div>
+
+                            {/* Voting Overlay */}
+                            {getUpvotersForVideo(video.id).length > 0 && (
+                              <>
+                                <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
+                                  {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
+                                    <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
+                                      {user?.image ? (
+                                        <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {getUpvotersForVideo(video.id).length > 3 && (
+                                    <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
+                                      +{getUpvotersForVideo(video.id).length - 3}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
+                                  <ThumbsUp size={10} className="fill-black" />
+                                  {getUpvotersForVideo(video.id).length}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                            <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                              {video.title}
+                            </h4>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50">
+                        <Search size={40} className="mb-4 stroke-[1.5]" />
+                        <p className="text-xs font-bold uppercase tracking-widest">No results found</p>
+                      </div>
+                    )
+                  ) : (
+                    // Default Recommendations View
+                    isLoadingRecommended ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="flex gap-4 p-3 bg-white/5 rounded-2xl animate-pulse">
+                          <div className="w-24 h-14 bg-white/10 rounded-xl shrink-0" />
+                          <div className="space-y-2 flex-1 pt-1">
+                            <div className="h-4 bg-white/10 rounded-lg w-full" />
+                            <div className="h-3 bg-white/10 rounded-lg w-2/3" />
+                          </div>
+                        </div>
+                      ))
+                    ) : displayedSuggestions.length > 0 ? (
+                      displayedSuggestions.map((video) => (
+                        <motion.div
+                          key={video.id}
+                          whileHover={{ scale: 1.02, x: 4 }}
+                          onClick={() => handleRecommendUpvote(video)}
+                          className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${(video as any).upvoteCount > 0
+                            ? 'bg-white/[0.05] border-white/20 shadow-lg shadow-white/5'
+                            : 'bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10'
                             }`}
                         >
-                          <ThumbsUp
-                            size={14}
-                            className={upvotedStreams.has(roomStream.streamId) ? 'text-pink-400 fill-pink-400' : 'text-pink-400'}
-                          />
-                          <span className="text-white text-xs font-semibold">
-                            {roomStream.upvoteCount}
-                          </span>
-                        </button>
-                        {room.currentStream?.stream.id !== roomStream.stream.id && (
-                          <button
-                            onClick={() => handlePlayStream(roomStream.streamId)}
-                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1 text-xs"
-                          >
-                            <Play size={12} />
-                            Play
-                          </button>
-                        )}
+                          <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                            <img
+                              src={video.thumbnail?.url || (video.thumbnail as any)}
+                              alt={video.title}
+                              className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Plus size={20} className="text-white transform scale-50 group-hover:scale-100 transition-transform" />
+                            </div>
+                            {video.duration && (
+                              <span className="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded-lg text-white font-bold">
+                                {video.duration}
+                              </span>
+                            )}
+
+                            {(video as any).upvoteCount > 0 && (
+                              <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl pointer-events-none" />
+                            )}
+
+                            {/* Voting Overlay */}
+                            {getUpvotersForVideo(video.id).length > 0 && (
+                              <>
+                                <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
+                                  {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
+                                    <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
+                                      {user?.image ? (
+                                        <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {getUpvotersForVideo(video.id).length > 3 && (
+                                    <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
+                                      +{getUpvotersForVideo(video.id).length - 3}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
+                                  <ThumbsUp size={10} className="fill-black" />
+                                  {getUpvotersForVideo(video.id).length}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                            <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                              {video.title}
+                            </h4>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50 grayscale">
+                        <Search size={40} className="mb-4 stroke-[3]" />
+                        <p className="text-xs font-bold uppercase tracking-widest">No suggestions available</p>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    )
+                  )}
+                </div>
               </div>
-            )}
+            </motion.div>
           </div>
         )}
 
+
+
         {!isRoomMember && (
-          <div className="text-center py-12 bg-gray-800/30 rounded-xl border border-purple-500/20">
-            <p className="text-gray-400 mb-4">Join this room to watch and add streams!</p>
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-20 text-center py-20 bg-white/[0.02] backdrop-blur-md border border-white/[0.05] rounded-[3rem]"
+          >
+            <div className="inline-flex p-6 bg-white/5 rounded-[2rem] mb-8 border border-white/5">
+              <Users size={48} className="text-gray-500 stroke-[1.5]" />
+            </div>
+            <h2 className="text-2xl font-bold text-white tracking-widest uppercase mb-4">Awaiting Admission</h2>
+            <p className="text-gray-500 font-bold max-w-md mx-auto mb-10 text-xs uppercase tracking-[0.3em]">Authorize session to synchronized playback and collective curation</p>
             <button
               onClick={handleJoin}
               disabled={isJoining || !session}
-              className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50"
+              className="group relative px-12 py-5 bg-white text-black rounded-[2rem] font-bold overflow-hidden hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10"
             >
-              {isJoining ? 'Joining...' : 'Join Room'}
+              <span className="relative z-10 text-xl tracking-tight">JOIN COLLECTIVE</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
-          </div>
+          </motion.div>
         )}
       </div>
-    </div >
+    </div>
   );
 }
 

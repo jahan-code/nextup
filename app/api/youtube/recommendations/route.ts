@@ -1,21 +1,22 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getQueryParam } from "@/src/lib/api/validation";
+import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { ValidationError } from "@/src/lib/api/errors/customErrors";
+import { rateLimit, RateLimitConfig } from "@/src/lib/api/rateLimit";
 import youtubesearchapi from 'youtube-search-api';
 
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = rateLimit(req, RateLimitConfig.YOUTUBE);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
-    const userId = getQueryParam(req, "userId");
-    
-    if (!userId) {
-      throw new ValidationError("User ID is required");
-    }
+    const user = await getAuthenticatedUser();
 
     const userStreams = await prismaClient.stream.findMany({
       where: {
-        UserId: userId,
+        UserId: user.id,
         active: true,
       },
       take: 10,
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     const searchTerms: string[] = [];
     const basedOnStreams: string[] = [];
-    
+
     if (streamTitles.length > 0) {
       const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'video', 'official', 'music', 'song'];
       streamTitles.forEach((title) => {
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
           .split(/\s+/)
           .filter((word) => word.length > 3 && !commonWords.includes(word))
           .slice(0, 4);
-        
+
         if (words.length > 0) {
           const searchTerm = words.join(" ");
           searchTerms.push(searchTerm);
@@ -76,12 +77,12 @@ export async function GET(req: NextRequest) {
     for (const searchTerm of searchTerms.slice(0, 3)) {
       try {
         const results = await youtubesearchapi.GetListByKeyword(searchTerm, false, 10);
-        
+
         if (results.items && results.items.length > 0) {
           for (const item of results.items) {
             const videoId = item.id;
             if (!videoId) continue;
-            
+
             if (!seenVideoIds.has(videoId) && !userStreamIds.has(videoId)) {
               seenVideoIds.add(videoId);
               allRecommendations.push({

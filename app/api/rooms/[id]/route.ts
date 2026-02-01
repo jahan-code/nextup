@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
-import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser } from "@/src/lib/api/auth";
+import { prismaClient } from "@/src/lib/db-v3";
+import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { validateParams, validateRequest } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 import { AuthorizationError, NotFoundError } from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
+import { RoomPortal } from "@/src/features/rooms/services/room-portal.service";
 import { CreateRoomSchema } from "@/src/validation/rooms";
 
 export async function GET(
@@ -13,7 +14,7 @@ export async function GET(
 ) {
   try {
     const { id: roomId } = await validateParams(params, ["id"]);
-    
+
     const room = await prismaClient.room.findUnique({
       where: { id: roomId },
       include: {
@@ -21,6 +22,7 @@ export async function GET(
           select: {
             id: true,
             email: true,
+            image: true,
           },
         },
         members: {
@@ -29,6 +31,7 @@ export async function GET(
               select: {
                 id: true,
                 email: true,
+                image: true,
               },
             },
           },
@@ -50,6 +53,7 @@ export async function GET(
               select: {
                 id: true,
                 email: true,
+                image: true,
               },
             },
             upvotes: {
@@ -154,6 +158,7 @@ export async function PUT(
           select: {
             id: true,
             email: true,
+            image: true,
           },
         },
         members: {
@@ -162,6 +167,7 @@ export async function PUT(
               select: {
                 id: true,
                 email: true,
+                image: true,
               },
             },
           },
@@ -181,6 +187,43 @@ export async function PUT(
     return successResponse(updatedRoom);
   } catch (error) {
     return handleApiError(error, "PUT /api/rooms/[id]");
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const user = await getAuthenticatedUser();
+    const { id: roomId } = await validateParams(params, ["id"]);
+
+    const room = await prismaClient.room.findUnique({
+      where: { id: roomId },
+      select: {
+        id: true,
+        creatorId: true,
+      },
+    });
+
+    if (!room) {
+      throw new NotFoundError(ErrorCode.ROOM_NOT_FOUND);
+    }
+
+    if (room.creatorId !== user.id) {
+      throw new AuthorizationError(ErrorCode.NOT_ROOM_CREATOR);
+    }
+
+    await prismaClient.room.delete({
+      where: { id: roomId },
+    });
+
+    return successResponse({
+      message: "Room ended successfully",
+      roomEnded: true,
+    });
+  } catch (error) {
+    return handleApiError(error, "DELETE /api/rooms/[id]");
   }
 }
 

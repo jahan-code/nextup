@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
 import { Menu, X, Home, Sparkles, Workflow, User, LogOut, LayoutDashboard, Users } from 'lucide-react';
 import Logo from './Logo';
@@ -10,6 +11,8 @@ import JoinRoomModal from '../features/JoinRoomModal';
 
 const Appbar = () => {
   const session = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -32,11 +35,15 @@ const Appbar = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: Home, href: '#' },
-    { id: 'features', label: 'Features', icon: Sparkles, href: '#features' },
-    { id: 'how-it-works', label: 'How It Works', icon: Workflow, href: '#how-it-works' },
-  ];
+  const navItems = session.data?.user
+    ? [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    ]
+    : [
+      { id: 'home', label: 'Home', icon: Home, href: '#' },
+      { id: 'features', label: 'Features', icon: Sparkles, href: '#features' },
+      { id: 'how-it-works', label: 'How It Works', icon: Workflow, href: '#how-it-works' },
+    ];
 
   return (
     <>
@@ -44,11 +51,10 @@ const Appbar = () => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? 'bg-gray-900/95 backdrop-blur-xl border-b border-purple-500/30 shadow-2xl shadow-purple-900/20'
-            : 'bg-gray-900/80 backdrop-blur-lg border-b border-purple-500/20 shadow-lg shadow-purple-900/10'
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+          ? 'bg-black/95 backdrop-blur-xl border-b border-gray-600/30 shadow-2xl shadow-black/40'
+          : 'bg-black/80 backdrop-blur-lg border-b border-gray-600/20 shadow-lg shadow-black/20'
+          }`}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
@@ -58,7 +64,11 @@ const Appbar = () => {
               whileTap={{ scale: 0.95 }}
               className="flex items-center cursor-pointer"
               onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (session.data?.user) {
+                  router.push('/dashboard');
+                } else {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
                 setIsMobileMenuOpen(false);
               }}
             >
@@ -77,7 +87,9 @@ const Appbar = () => {
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                     whileHover={{ y: -2 }}
                     onClick={() => {
-                      if (item.id === 'home') {
+                      if (item.href.startsWith('/')) {
+                        window.location.href = item.href;
+                      } else if (item.id === 'home') {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       } else {
                         scrollToSection(item.id);
@@ -88,7 +100,7 @@ const Appbar = () => {
                     <IconComponent size={16} className="opacity-70 group-hover:opacity-100 transition-opacity" />
                     <span>{item.label}</span>
                     <motion.div
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-400 to-pink-400 rounded-full"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full"
                       initial={{ scaleX: 0 }}
                       whileHover={{ scaleX: 1 }}
                       transition={{ duration: 0.3 }}
@@ -102,34 +114,21 @@ const Appbar = () => {
             <div className="hidden md:flex items-center gap-3">
               {session.data?.user ? (
                 <>
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <MagneticButton
-                      onClick={() => {
-                        const event = new CustomEvent('open-join-room');
-                        window.dispatchEvent(event);
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-2 rounded-lg hover:bg-gray-800/50"
-                    >
-                      <Users size={16} />
-                      <span>Join Room</span>
-                    </MagneticButton>
-                  </motion.div>
-                  <MagneticButton
-                    onClick={() => window.location.href = '/dashboard'}
-                    className="px-6 py-2.5 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2"
-                  >
-                    <LayoutDashboard size={16} />
-                    <span>Dashboard</span>
-                  </MagneticButton>
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
+                  {/* Removed separate Dashboard button as it's now in navItems */}
+                  <div className="flex items-center gap-3">
+                    {session.data?.user?.image ? (
+                      <motion.img
+                        whileHover={{ scale: 1.1 }}
+                        src={session.data.user.image}
+                        alt={session.data.user.name || 'User'}
+                        className="w-10 h-10 rounded-full border-2 border-white/20 shadow-lg cursor-pointer"
+                        title={session.data.user.name || session.data.user.email || ''}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-white/10 text-gray-400">
+                        <User size={20} />
+                      </div>
+                    )}
                     <MagneticButton
                       onClick={() => signOut()}
                       className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-2 rounded-lg hover:bg-gray-800/50"
@@ -137,7 +136,7 @@ const Appbar = () => {
                       <LogOut size={16} />
                       <span>Sign Out</span>
                     </MagneticButton>
-                  </motion.div>
+                  </div>
                 </>
               ) : (
                 <>
@@ -149,7 +148,7 @@ const Appbar = () => {
                   </MagneticButton>
                   <MagneticButton
                     onClick={() => window.location.href = '/signup'}
-                    className="px-6 py-2.5 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2"
+                    className="px-6 py-2.5 text-sm font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all flex items-center gap-2"
                   >
                     <User size={16} />
                     <span>Sign Up</span>
@@ -189,7 +188,7 @@ const Appbar = () => {
                 )}
               </AnimatePresence>
             </motion.button>
-        </div>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -200,7 +199,7 @@ const Appbar = () => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="lg:hidden overflow-hidden border-t border-purple-500/20 bg-gray-900/95 backdrop-blur-xl"
+              className="lg:hidden overflow-hidden border-t border-gray-600/20 bg-black/95 backdrop-blur-xl"
             >
               <div className="container mx-auto px-4 py-4 space-y-2">
                 {navItems.map((item, index) => {
@@ -212,11 +211,14 @@ const Appbar = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
                       onClick={() => {
-                        if (item.id === 'home') {
+                        if (item.href.startsWith('/')) {
+                          router.push(item.href);
+                        } else if (item.id === 'home') {
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         } else {
                           scrollToSection(item.id);
                         }
+                        setIsMobileMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors"
                     >
@@ -225,9 +227,25 @@ const Appbar = () => {
                     </motion.button>
                   );
                 })}
-                <div className="pt-4 border-t border-purple-500/20">
+                <div className="pt-4 border-t border-gray-600/20">
                   {session.data?.user ? (
                     <>
+                      <div className="flex items-center gap-3 px-4 py-3 mb-2">
+                        {session.data?.user?.image ? (
+                          <img
+                            src={session.data.user.image}
+                            alt={session.data.user.name || 'User'}
+                            className="w-10 h-10 rounded-full border border-white/10"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-white/10 text-gray-400">
+                            <User size={20} />
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-400 truncate max-w-[150px]">{session.data?.user?.email}</span>
+                        </div>
+                      </div>
                       <motion.button
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -238,16 +256,7 @@ const Appbar = () => {
                         <LogOut size={20} />
                         <span>Sign Out</span>
                       </motion.button>
-                      <motion.button
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: (navItems.length + 1) * 0.1 }}
-                        onClick={() => window.location.href = '/dashboard'}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-                      >
-                        <LayoutDashboard size={20} />
-                        <span>Dashboard</span>
-                      </motion.button>
+                      {/* Removed separate Dashboard button in mobile menu */}
                     </>
                   ) : (
                     <>
@@ -255,7 +264,10 @@ const Appbar = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.3, delay: navItems.length * 0.1 }}
-                        onClick={() => window.location.href = '/login'}
+                        onClick={() => {
+                          window.location.href = '/login';
+                          setIsMobileMenuOpen(false);
+                        }}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors mb-2"
                       >
                         <span>Sign In</span>
@@ -264,16 +276,19 @@ const Appbar = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.3, delay: (navItems.length + 1) * 0.1 }}
-                        onClick={() => window.location.href = '/signup'}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+                        onClick={() => {
+                          window.location.href = '/signup';
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all"
                       >
                         <User size={20} />
                         <span>Sign Up</span>
                       </motion.button>
                     </>
                   )}
-        </div>
-    </div>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser, requireRoomMembership } from "@/src/lib/api/auth";
+import { getAuthenticatedUser, requireRoomMembership } from "@/src/lib/api/auth/auth-shield";
 import { validateParams } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 import { BusinessLogicError, NotFoundError } from "@/src/lib/api/errors/customErrors";
@@ -46,6 +46,25 @@ export async function POST(
         role: RoomMemberRole.MEMBER,
       },
     });
+
+    // Initialize Ably for broadcasting
+    const Ably = (await import('ably')).Realtime;
+    const apiKey = process.env.NEXT_PUBLIC_ABLY_API_KEY;
+    if (apiKey) {
+      const ably = new Ably({ key: apiKey });
+      const channel = ably.channels.get(`room:${roomId}`);
+
+      await channel.publish('member:joined', {
+        userId: user.id,
+        user: {
+          id: user.id,
+          email: user.email,
+          image: user.image
+        }
+      });
+
+      ably.close();
+    }
 
     return successResponse({ message: "Successfully joined room" });
   } catch (error) {

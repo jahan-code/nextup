@@ -240,7 +240,7 @@ export default function CreateRoomPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <Loader2 className="text-indigo-400 animate-spin" size={48} />
+        <Loader2 className="text-gray-400 animate-spin" size={48} />
       </div>
     );
   }
@@ -255,7 +255,7 @@ export default function CreateRoomPage() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-2xl mx-auto"
         >
-          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent mb-3">
             Create Watch Party Room
           </h1>
           <p className="text-gray-400 text-lg mb-8">
@@ -267,7 +267,7 @@ export default function CreateRoomPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-800/60 backdrop-blur-sm border border-purple-500/20 rounded-xl p-6 sm:p-8"
+              className="bg-gray-800/60 backdrop-blur-sm border border-gray-600/30 rounded-xl p-6 sm:p-8"
             >
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Room Name */}
@@ -282,7 +282,7 @@ export default function CreateRoomPage() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="My Awesome Watch Party"
-                    className="w-full px-4 py-3 bg-gray-900/50 border border-purple-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors"
+                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 transition-colors"
                     disabled={isSubmitting}
                   />
                   {errors.name && (
@@ -302,7 +302,7 @@ export default function CreateRoomPage() {
                     onChange={handleChange}
                     placeholder="What's this room about?"
                     rows={4}
-                    className="w-full px-4 py-3 bg-gray-900/50 border border-purple-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors resize-none"
+                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 transition-colors resize-none"
                     disabled={isSubmitting}
                   />
                   {errors.description && (
@@ -316,7 +316,7 @@ export default function CreateRoomPage() {
                     Privacy Setting
                   </label>
                   <div className="space-y-3">
-                    <label className="flex items-center gap-3 p-4 bg-gray-900/50 border border-purple-500/20 rounded-lg cursor-pointer hover:border-purple-500/40 transition-colors">
+                    <label className="flex items-center gap-3 p-4 bg-gray-900/50 border border-gray-600/30 rounded-lg cursor-pointer hover:border-gray-500/50 transition-colors">
                       <input
                         type="radio"
                         name="isPublic"
@@ -327,18 +327,18 @@ export default function CreateRoomPage() {
                         className="sr-only"
                       />
                       <div className={`flex-1 flex items-center gap-3 ${formData.isPublic ? 'text-white' : 'text-gray-400'}`}>
-                        <Globe size={20} className={formData.isPublic ? 'text-indigo-400' : ''} />
+                        <Globe size={20} className={formData.isPublic ? 'text-gray-400' : ''} />
                         <div>
                           <div className="font-medium">Public Room</div>
                           <div className="text-sm">Anyone can find and join this room</div>
                         </div>
                       </div>
                       {formData.isPublic && (
-                        <div className="w-4 h-4 bg-indigo-600 rounded-full border-2 border-indigo-400"></div>
+                        <div className="w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-400"></div>
                       )}
                     </label>
 
-                    <label className="flex items-center gap-3 p-4 bg-gray-900/50 border border-purple-500/20 rounded-lg cursor-pointer hover:border-purple-500/40 transition-colors">
+                    <label className="flex items-center gap-3 p-4 bg-gray-900/50 border border-gray-600/30 rounded-lg cursor-pointer hover:border-gray-500/50 transition-colors">
                       <input
                         type="radio"
                         name="isPublic"
@@ -349,14 +349,14 @@ export default function CreateRoomPage() {
                         className="sr-only"
                       />
                       <div className={`flex-1 flex items-center gap-3 ${!formData.isPublic ? 'text-white' : 'text-gray-400'}`}>
-                        <Lock size={20} className={!formData.isPublic ? 'text-pink-400' : ''} />
+                        <Lock size={20} className={!formData.isPublic ? 'text-gray-500' : ''} />
                         <div>
                           <div className="font-medium">Private Room</div>
                           <div className="text-sm">Only people with the room link can join</div>
                         </div>
                       </div>
                       {!formData.isPublic && (
-                        <div className="w-4 h-4 bg-pink-600 rounded-full border-2 border-pink-400"></div>
+                        <div className="w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-500"></div>
                       )}
                     </label>
                   </div>
@@ -375,7 +375,7 @@ export default function CreateRoomPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -413,7 +413,7 @@ export default function CreateRoomPage() {
                   className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
                 >
                   <div
-                    className="bg-gray-800/95 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl pointer-events-auto"
+                    className="bg-gray-800/95 backdrop-blur-xl border border-gray-600/30 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl pointer-events-auto"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-start justify-between mb-6">
@@ -443,14 +443,14 @@ export default function CreateRoomPage() {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search YouTube videos..."
-                            className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-purple-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors"
+                            className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 transition-colors"
                             disabled={isSearching}
                           />
                         </div>
                         <button
                           type="submit"
                           disabled={isSearching || !searchQuery.trim()}
-                          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                          className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
                         >
                           {isSearching ? (
                             <Loader2 className="animate-spin" size={20} />
@@ -470,7 +470,7 @@ export default function CreateRoomPage() {
                             key={video.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-4 p-4 bg-gray-900/50 border border-purple-500/20 rounded-lg hover:border-purple-500/40 hover:bg-gray-900/70 transition-all cursor-pointer group"
+                            className="flex items-center gap-4 p-4 bg-gray-900/50 border border-gray-600/30 rounded-lg hover:border-gray-500/50 hover:bg-gray-900/70 transition-all cursor-pointer group"
                             onClick={() => handleSelectStream(video)}
                           >
                             <img
@@ -482,7 +482,7 @@ export default function CreateRoomPage() {
                               }}
                             />
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-white font-medium text-sm line-clamp-2 group-hover:text-indigo-400 transition-colors">
+                              <h4 className="text-white font-medium text-sm line-clamp-2 group-hover:text-gray-400 transition-colors">
                                 {video.title}
                               </h4>
                               <p className="text-gray-400 text-xs mt-1">{video.channelTitle}</p>
@@ -493,7 +493,7 @@ export default function CreateRoomPage() {
                                 handleSelectStream(video);
                               }}
                               disabled={isAddingStream}
-                              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold flex-shrink-0"
+                              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold flex-shrink-0"
                             >
                               {isAddingStream && addingVideoId === video.id ? (
                                 <Loader2 className="animate-spin" size={16} />
@@ -510,7 +510,7 @@ export default function CreateRoomPage() {
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3 mt-6 pt-6 border-t border-purple-500/20">
+                    <div className="flex gap-3 mt-6 pt-6 border-t border-gray-600/30">
                       <button
                         onClick={handleSkipStreamSelection}
                         className="flex-1 px-6 py-3 bg-gray-700/50 text-gray-300 rounded-lg hover:bg-gray-700/70 transition-colors font-medium"

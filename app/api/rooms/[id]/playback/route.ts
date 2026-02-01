@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser, requireRoomCreator } from "@/src/lib/api/auth";
+import { getAuthenticatedUser, requireRoomMembership } from "@/src/lib/api/auth/auth-shield";
 import { validateParams, validateRequest } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 import { PlaybackUpdateSchema } from "@/src/validation/rooms";
@@ -12,7 +12,7 @@ export async function PUT(
   try {
     const user = await getAuthenticatedUser();
     const { id: roomId } = await validateParams(params, ["id"]);
-    await requireRoomCreator(user.id, roomId);
+    await requireRoomMembership(user.id, roomId);
 
     const { playbackTime, isPlaying } = await validateRequest(req, PlaybackUpdateSchema);
 

@@ -23,13 +23,49 @@ interface SkipUpdate {
   threshold: number;
 }
 
+interface MemberLeftUpdate {
+  userId: string;
+  isCreator: boolean;
+}
+
+interface CreatorTransferredUpdate {
+  oldCreatorId: string;
+  newCreatorId: string;
+  newCreator: {
+    id: string;
+    email: string;
+    image: string | null;
+  };
+}
+
+interface RoomEndedUpdate {
+  roomId: string;
+  reason: string;
+}
+
+interface PresenceUpdate {
+  action: 'enter' | 'leave' | 'update';
+  clientId: string;
+  data: any;
+}
+
 interface UseRoomAblyOptions {
   roomId: string | null;
+  userId: string | null;
+  userInfo?: {
+    name: string;
+    image: string | null;
+  };
   isCreator: boolean;
   onPlaybackUpdate?: (data: PlaybackUpdate) => void;
   onStreamChange?: (streamId: string) => void;
   onReaction?: (data: ReactionUpdate) => void;
   onSkipUpdate?: (data: SkipUpdate) => void;
+  onMemberLeft?: (data: MemberLeftUpdate) => void;
+  onMemberJoined?: (data: { userId: string, user: any }) => void;
+  onCreatorTransferred?: (data: CreatorTransferredUpdate) => void;
+  onRoomEnded?: (data: RoomEndedUpdate) => void;
+  onPresenceUpdate?: (data: PresenceUpdate) => void;
   debugLog?: (message: string, data?: any) => void;
 }
 
@@ -79,11 +115,18 @@ const syncClockToServer = async (): Promise<number> => {
 
 export const useRoomAbly = ({
   roomId,
+  userId,
+  userInfo,
   isCreator,
   onPlaybackUpdate,
   onStreamChange,
   onReaction,
   onSkipUpdate,
+  onMemberLeft,
+  onMemberJoined,
+  onCreatorTransferred,
+  onRoomEnded,
+  onPresenceUpdate,
   debugLog,
 }: UseRoomAblyOptions) => {
   const log = useCallback((msg: string, data?: any) => {
@@ -111,6 +154,11 @@ export const useRoomAbly = ({
   const onStreamChangeRef = useRef(onStreamChange);
   const onReactionRef = useRef(onReaction);
   const onSkipUpdateRef = useRef(onSkipUpdate);
+  const onMemberLeftRef = useRef(onMemberLeft);
+  const onMemberJoinedRef = useRef(onMemberJoined);
+  const onCreatorTransferredRef = useRef(onCreatorTransferred);
+  const onRoomEndedRef = useRef(onRoomEnded);
+  const onPresenceUpdateRef = useRef(onPresenceUpdate);
 
   // Update refs when callbacks change (without triggering useEffect)
 
@@ -119,7 +167,12 @@ export const useRoomAbly = ({
     onStreamChangeRef.current = onStreamChange;
     onReactionRef.current = onReaction;
     onSkipUpdateRef.current = onSkipUpdate;
-  }, [onPlaybackUpdate, onStreamChange, onReaction, onSkipUpdate]);
+    onMemberLeftRef.current = onMemberLeft;
+    onMemberJoinedRef.current = onMemberJoined;
+    onCreatorTransferredRef.current = onCreatorTransferred;
+    onRoomEndedRef.current = onRoomEnded;
+    onPresenceUpdateRef.current = onPresenceUpdate;
+  }, [onPlaybackUpdate, onStreamChange, onReaction, onSkipUpdate, onMemberLeft, onMemberJoined, onCreatorTransferred, onRoomEnded, onPresenceUpdate]);
 
   // Initialize Ably connection
   useEffect(() => {
@@ -144,10 +197,18 @@ export const useRoomAbly = ({
 
     console.log('[SYNC_DEBUG] Creating Ably Realtime instance', { roomId, isCreator, hasApiKey: !!apiKey });
 
-    const ably = new Realtime({
+    const clientOptions: any = {
       key: apiKey,
-      clientId: `user-${Date.now()}`, // Unique client ID
-    });
+    };
+
+    // Use userId as clientId if available, otherwise fallback to random
+    if (userId) {
+      clientOptions.clientId = userId;
+    } else {
+      clientOptions.clientId = `anon-${Date.now()}`;
+    }
+
+    const ably = new Realtime(clientOptions);
 
     const channel = ably.channels.get(`room:${roomId}`);
 
@@ -163,6 +224,16 @@ export const useRoomAbly = ({
     ably.connection.on('connected', async () => {
       console.log('[SYNC_DEBUG] Ably connected', { roomId, isCreator, channelName: `room:${roomId}` });
       setIsConnected(true);
+
+      // Enter presence if we have user info
+      if (userId && userInfo) {
+        try {
+          await channel.presence.enter(userInfo);
+          console.log('[SYNC_DEBUG] Entered presence', { userId, userInfo });
+        } catch (err) {
+          console.error('[SYNC_DEBUG] Failed to enter presence:', err);
+        }
+      }
 
       // RAVE-STYLE: Sync client clock to server time on connection
       try {
@@ -184,6 +255,37 @@ export const useRoomAbly = ({
     ably.connection.on('failed', () => {
       console.error('Ably connection failed');
       setIsConnected(false);
+    });
+
+    // Subscribe to presence changes
+    channel.presence.subscribe('enter', (member) => {
+      if (onPresenceUpdateRef.current) {
+        onPresenceUpdateRef.current({
+          action: 'enter',
+          clientId: member.clientId,
+          data: member.data
+        });
+      }
+    });
+
+    channel.presence.subscribe('leave', (member) => {
+      if (onPresenceUpdateRef.current) {
+        onPresenceUpdateRef.current({
+          action: 'leave',
+          clientId: member.clientId,
+          data: member.data
+        });
+      }
+    });
+
+    channel.presence.subscribe('update', (member) => {
+      if (onPresenceUpdateRef.current) {
+        onPresenceUpdateRef.current({
+          action: 'update',
+          clientId: member.clientId,
+          data: member.data
+        });
+      }
     });
 
     channel.subscribe('playback:update', (message) => {
@@ -227,6 +329,38 @@ export const useRoomAbly = ({
       const data = message.data as SkipUpdate;
       if (onSkipUpdateRef.current) {
         onSkipUpdateRef.current(data);
+      }
+    });
+
+    // Subscribe to member left
+    channel.subscribe('member:left', (message) => {
+      const data = message.data as MemberLeftUpdate;
+      if (onMemberLeftRef.current) {
+        onMemberLeftRef.current(data);
+      }
+    });
+
+    // Subscribe to member joined
+    channel.subscribe('member:joined', (message) => {
+      const data = message.data as { userId: string, user: any };
+      if (onMemberJoinedRef.current) {
+        onMemberJoinedRef.current(data);
+      }
+    });
+
+    // Subscribe to creator transferred
+    channel.subscribe('creator:transferred', (message) => {
+      const data = message.data as CreatorTransferredUpdate;
+      if (onCreatorTransferredRef.current) {
+        onCreatorTransferredRef.current(data);
+      }
+    });
+
+    // Subscribe to room ended
+    channel.subscribe('room:ended', (message) => {
+      const data = message.data as RoomEndedUpdate;
+      if (onRoomEndedRef.current) {
+        onRoomEndedRef.current(data);
       }
     });
 

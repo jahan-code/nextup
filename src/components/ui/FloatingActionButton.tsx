@@ -145,7 +145,7 @@ export default function FloatingActionButton() {
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="absolute bottom-16 right-0 mb-2 bg-gray-800/95 backdrop-blur-xl border border-purple-500/20 rounded-xl shadow-2xl overflow-hidden min-w-[200px]"
+              className="absolute bottom-16 right-0 mb-2 bg-gray-800/95 backdrop-blur-xl border border-gray-600/30 rounded-xl shadow-2xl overflow-hidden min-w-[200px]"
             >
               {actions.map((action, index) => (
                 <motion.button
@@ -154,9 +154,9 @@ export default function FloatingActionButton() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={action.onClick}
-                  className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-700/50 transition-colors text-white border-b border-purple-500/10 last:border-b-0"
+                  className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-700/50 transition-colors text-white border-b border-gray-600/20 last:border-b-0"
                 >
-                  <div className="text-indigo-400">{action.icon}</div>
+                  <div className="text-gray-400">{action.icon}</div>
                   <span className="font-medium text-sm">{action.label}</span>
                 </motion.button>
               ))}
@@ -170,7 +170,7 @@ export default function FloatingActionButton() {
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="w-14 h-14 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-purple-500/50 transition-all flex items-center justify-center"
+        className="w-14 h-14 bg-gray-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-gray-500 transition-all flex items-center justify-center"
         aria-label="Quick actions"
         aria-expanded={isOpen}
       >

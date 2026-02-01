@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "noImplicitAny": false
+  },
+  "include": [
+    "verify-v3.ts",
+    "src/**/*"
+  ]
+}

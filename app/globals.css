@@ -27,11 +27,11 @@ html {
 @keyframes glow {
   0%, 100% {
     opacity: 1;
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 20px rgba(75, 85, 99, 0.3);
   }
   50% {
     opacity: 0.8;
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 30px rgba(75, 85, 99, 0.5);
   }
 }
 
@@ -119,7 +119,7 @@ html {
 
 /* Gradient Utilities */
 .gradient-text {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -127,13 +127,13 @@ html {
 
 .gradient-border {
   position: relative;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+  background: linear-gradient(135deg, #6b7280, #4b5563);
   border-radius: 0.5rem;
   padding: 2px;
 }
 
 .gradient-border-content {
-  background: #1f2937;
+  background: #111827;
   border-radius: calc(0.5rem - 2px);
   padding: 1rem;
 }
@@ -155,7 +155,7 @@ html {
   background: rgba(31, 41, 55, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(75, 85, 99, 0.3);
 }
 
 /* Custom scrollbar for dark theme */
@@ -168,28 +168,28 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #6366f1, #ec4899);
+  background: linear-gradient(180deg, #4b5563, #6b7280);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #818cf8, #f472b6);
+  background: linear-gradient(180deg, #6b7280, #9ca3af);
 }
 
 /* Selection styling */
 ::selection {
-  background-color: rgba(139, 92, 246, 0.3);
+  background-color: rgba(75, 85, 99, 0.4);
   color: #ffffff;
 }
 
 ::-moz-selection {
-  background-color: rgba(139, 92, 246, 0.3);
+  background-color: rgba(75, 85, 99, 0.4);
   color: #ffffff;
 }
 
 /* Focus styles for accessibility */
 *:focus-visible {
-  outline: 2px solid #8b5cf6;
+  outline: 2px solid #6b7280;
   outline-offset: 2px;
 }
 
@@ -228,7 +228,4 @@ a, button {
   transform-style: preserve-3d;
 }
 
-/* Smooth 3D transitions */
-* {
-  transform-style: preserve-3d;
-}
+/* 3D transform-style applied only where needed (e.g. .transform-3d, Card3D) */

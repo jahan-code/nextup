@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Appbar } from '@/src/components';
-import { Plus, Users, Loader2, Search } from 'lucide-react';
+import { Appbar, SkeletonRoomGrid } from '@/src/components';
+import { Plus, Users, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import EmptyState from '@/src/components/ui/EmptyState';
 import JoinRoomModal from '@/src/components/features/JoinRoomModal';
@@ -82,7 +82,7 @@ export default function RoomsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-black">
       <Appbar />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -93,17 +93,17 @@ export default function RoomsPage() {
           className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
         >
           <div>
-            <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
-              Watch Party Rooms
+            <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent mb-2">
+              Watch Party Dashboard
             </h1>
             <p className="text-gray-400">
-              Join a room or create your own to watch streams together
+              Explore and join public watch party rooms
             </p>
           </div>
           {session && (
             <button
               onClick={() => router.push('/rooms/create')}
-              className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2 font-semibold"
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:shadow-lg hover:bg-gray-500 transition-all flex items-center gap-2 font-semibold"
             >
               <Plus size={20} />
               Create Room
@@ -125,20 +125,18 @@ export default function RoomsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search rooms..."
-              className="w-full pl-12 pr-4 py-3 bg-gray-800/50 border border-purple-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors"
+              className="w-full pl-12 pr-4 py-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 transition-colors"
             />
           </div>
         </motion.div>
 
         {/* Main Content Area */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="text-indigo-400 animate-spin" size={48} />
-          </div>
+          <SkeletonRoomGrid />
         ) : (
           <>
             {error && (
-              <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-6 text-center mb-8">
+              <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center mb-8">
                 <p className="text-red-400">{error}</p>
               </div>
             )}
@@ -159,15 +157,9 @@ export default function RoomsPage() {
                     ? [
                       {
                         label: 'Create Your First Room',
-                        onClick: () => router.push('/dashboard'),
+                        onClick: () => router.push('/rooms/create'),
                         icon: Plus,
                         variant: 'primary',
-                      },
-                      {
-                        label: 'Join Existing Room',
-                        onClick: () => setShowJoinModal(true),
-                        icon: Users,
-                        variant: 'secondary',
                       },
                     ]
                     : []
@@ -181,7 +173,7 @@ export default function RoomsPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gray-800/60 backdrop-blur-sm border border-purple-500/20 rounded-xl overflow-hidden hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/20 transition-all cursor-pointer group"
+                    className="bg-gray-800/60 backdrop-blur-sm border border-gray-600/30 rounded-xl overflow-hidden hover:border-gray-500/50 hover:shadow-lg hover:shadow-gray-500/20 transition-all cursor-pointer group"
                     onClick={() => router.push(`/rooms/${room.id}`)}
                   >
                     {/* Room Thumbnail */}
@@ -219,7 +211,7 @@ export default function RoomsPage() {
                           <span>{room._count.streams} streams</span>
                         </div>
                         {room.currentStream && (
-                          <span className="text-indigo-400 text-xs">Now Playing</span>
+                          <span className="text-gray-400 text-xs">Now Playing</span>
                         )}
                       </div>
                     </div>

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser, requireRoomMembership } from "@/src/lib/api/auth";
+import { getAuthenticatedUser, requireRoomMembership } from "@/src/lib/api/auth/auth-shield";
 import { validateParams, validateRequest } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 import { BusinessLogicError, NotFoundError } from "@/src/lib/api/errors/customErrors";
@@ -34,7 +34,7 @@ export async function POST(
       extractedId = stream.extractedId;
     } else if (data.url) {
       extractedId = getYouTubeId(data.url);
-      
+
       if (!extractedId) {
         throw new BusinessLogicError(ErrorCode.YOUTUBE_ID_EXTRACTION_FAILED);
       }
@@ -87,6 +87,11 @@ export async function POST(
         streamId: stream.id,
         addedById: user.id,
         order: (maxOrder?.order || 0) + 1,
+        upvotes: {
+          create: {
+            userId: user.id,
+          }
+        }
       },
       include: {
         stream: {
@@ -105,6 +110,17 @@ export async function POST(
             id: true,
             email: true,
           },
+        },
+        upvotes: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                image: true
+              }
+            }
+          }
         },
         _count: {
           select: {
