@@ -5,7 +5,7 @@ import { validateParams } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 import { BusinessLogicError, NotFoundError } from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
-import { RoomMemberRole } from "@/app/generated/prisma/client";
+import { RoomMemberRole } from "@/app/generated/prisma-v3";
 
 export async function POST(
   req: NextRequest,

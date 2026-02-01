@@ -1,4 +1,4 @@
-import type { Room, RoomMember, User } from "@/app/generated/prisma/client";
+import type { Room, RoomMember, User } from "@/app/generated/prisma-v3";
 
 export interface RoomWithDetails extends Room {
   creator: {

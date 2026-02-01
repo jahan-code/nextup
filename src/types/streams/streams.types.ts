@@ -1,4 +1,4 @@
-import type { Stream, Upvote, User } from "@/app/generated/prisma/client";
+import type { Stream, Upvote, User } from "@/app/generated/prisma-v3";
 
 export interface StreamWithUpvotes extends Stream {
   upvotes: Upvote[];

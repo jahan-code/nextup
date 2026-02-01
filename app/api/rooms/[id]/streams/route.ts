@@ -7,7 +7,7 @@ import { BusinessLogicError, NotFoundError } from "@/src/lib/api/errors/customEr
 import { ErrorCode } from "@/src/lib/api/errorConstants";
 import { AddStreamSchema } from "@/src/validation/rooms";
 import getYouTubeId from "get-youtube-id";
-import { StreamType } from "@/app/generated/prisma/client";
+import { StreamType } from "@/app/generated/prisma-v3";
 
 export async function POST(
   req: NextRequest,
