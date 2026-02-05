@@ -125,6 +125,15 @@ export async function POST(
       await prismaClient.skipVote.deleteMany({
         where: { roomStreamId: roomStream.id }
       });
+
+      // Delete the skipped stream from the queue
+      console.log(`[Auto-Remove] Deleting skipped stream from queue: ${roomStream.id}`);
+      await prismaClient.roomStream.delete({
+        where: { id: roomStream.id }
+      }).catch((err) => {
+        console.log(`[Auto-Remove] Failed to delete skipped stream (may already be deleted): ${err.message}`);
+      });
+      console.log(`[Auto-Remove] Successfully removed skipped stream from queue`);
     }
 
     return successResponse({

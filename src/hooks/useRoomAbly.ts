@@ -236,16 +236,39 @@ export const useRoomAbly = ({
       }
 
       // RAVE-STYLE: Sync client clock to server time on connection
+      // Optimization: Start with a quick single sample for immediate use, then refine if needed
       try {
-        const offset = await syncClockToServer();
-        clockOffsetRef.current = offset;
-        log('Clock synchronized to server, offset: ' + offset + ' ms');
+        // Initial fast sync
+        const start = performance.now();
+        const res = await fetch('/api/time', { method: 'GET', cache: 'no-cache' });
+        if (res.ok) {
+          const data = await res.json();
+          const t1 = data.serverTime;
+          const end = performance.now();
+          clockOffsetRef.current = (t1 - (start + end) / 2);
+          log('Fast clock sync complete, offset: ' + clockOffsetRef.current + ' ms');
+
+          // Refine in background if needed
+          syncClockToServer().then(offset => {
+            clockOffsetRef.current = offset;
+            log('Refined clock sync complete, offset: ' + offset + ' ms');
+          }).catch(console.error);
+        }
       } catch (error) {
         console.error('Failed to sync clock to server:', error);
-        // Continue with offset = 0 if sync fails
         clockOffsetRef.current = 0;
       }
     });
+
+    // Periodic Clock Sync to maintain accuracy over time
+    const clockSyncInterval = setInterval(() => {
+      if (ably.connection.state === 'connected') {
+        syncClockToServer().then(offset => {
+          clockOffsetRef.current = offset;
+          log('Periodic clock re-sync complete, offset: ' + offset + ' ms');
+        }).catch(err => console.warn('Periodic clock sync failed:', err));
+      }
+    }, 60000); // Every 60 seconds
 
     ably.connection.on('disconnected', () => {
       console.log('Ably disconnected');
@@ -368,6 +391,7 @@ export const useRoomAbly = ({
       console.log('[SYNC_DEBUG] useEffect cleanup running', { roomId, isCreator, hasChannel: !!channelRef.current });
       channel.unsubscribe();
       ably.close();
+      clearInterval(clockSyncInterval);
       ablyRef.current = null;
       channelRef.current = null;
     };

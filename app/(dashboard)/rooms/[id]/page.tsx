@@ -4,8 +4,8 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { Appbar, SkeletonPlayer, SkeletonStreamCard, SkeletonListItem } from '@/src/components';
-import { ThumbsUp, Loader2, Plus, Users, LogOut, Search, X, Play, Crown } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ThumbsUp, Loader2, Plus, Users, LogOut, Search, X, Play, Crown, RefreshCw, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { YouTubePlayer } from '@/src/types';
 import { PlayerState, type YouTubeVideo } from '@/src/types/youtube';
 import { useRoomAbly } from '@/src/hooks';
@@ -54,6 +54,7 @@ interface Room {
       email: string;
       image?: string | null;
     };
+    joinedAt: string;
     role: string;
   }>;
   streams: RoomStream[];
@@ -78,6 +79,46 @@ interface Room {
 }
 
 // YouTube types are imported from shared types file
+
+const VotedParticles = ({ streamId, effects }: { streamId: string; effects: { id: string; streamId: string }[] }) => {
+  const myEffects = effects.filter(e => e.streamId === streamId);
+  if (myEffects.length === 0) return null;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-visible z-[100]">
+      <AnimatePresence>
+        {myEffects.map(eff => (
+          <div key={eff.id} className="absolute inset-0 flex items-center justify-center">
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                animate={{
+                  scale: [0, 1.5, 0],
+                  x: Math.cos(i * 45 * Math.PI / 180) * 60 + (Math.random() - 0.5) * 20,
+                  y: Math.sin(i * 45 * Math.PI / 180) * 60 + (Math.random() - 0.5) * 20,
+                  opacity: [1, 1, 0]
+                }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="absolute w-2 h-2 bg-white rounded-full"
+                style={{
+                  boxShadow: '0 0 12px rgba(255,255,255,0.9)',
+                  filter: 'blur(0.5px)'
+                }}
+              />
+            ))}
+            <motion.div
+              initial={{ scale: 0.5, opacity: 1 }}
+              animate={{ scale: 2.5, opacity: 0 }}
+              transition={{ duration: 0.6 }}
+              className="absolute w-12 h-12 border-2 border-white/50 rounded-full"
+            />
+          </div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function RoomPage() {
   const { data: session } = useSession();
@@ -104,6 +145,7 @@ export default function RoomPage() {
   const [isVotingToSkip, setIsVotingToSkip] = useState(false);
   const [recommendedVideos, setRecommendedVideos] = useState<YouTubeVideo[]>([]);
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
+  const [activeTab, setActiveTab] = useState<'queue' | 'suggestions'>('queue');
 
   // Cache for recommendations to avoid redundant API calls
   const recommendationsCache = useRef<Map<string, YouTubeVideo[]>>(new Map());
@@ -122,6 +164,7 @@ export default function RoomPage() {
   const lastSyncRef = useRef<{ time: number; timestamp: number; isPlaying: boolean } | null>(null);
   const isSyncingRef = useRef(false);
   const lastUpdateTimeRef = useRef<number>(0);
+  const clockOffsetRef = useRef(0);
 
   // Store latest playback data from Ably messages to avoid stale state
   const latestPlaybackDataRef = useRef<{ playbackTime: number; isPlaying: boolean; timestamp: number; serverTimestamp?: number } | null>(null);
@@ -131,15 +174,42 @@ export default function RoomPage() {
   const roomIsPlayingRef = useRef(false);
   const updatePlaybackStateRef = useRef<any>(null);
 
+  // Presence state for migration logic
+  const [presentMemberIds, setPresentMemberIds] = useState<Set<string>>(new Set());
+  const [upvoteEffects, setUpvoteEffects] = useState<{ id: string; streamId: string }[]>([]);
+
+  const triggerUpvoteEffect = (streamId: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setUpvoteEffects(prev => [...prev, { id, streamId }]);
+    setTimeout(() => {
+      setUpvoteEffects(prev => prev.filter(eff => eff.id !== id));
+    }, 1000);
+  };
+
   // Determine if user is creator or member
   const isRoomCreator = useMemo(() => room?.creator.id === userId, [room?.creator.id, userId]);
   const isRoomMember = useMemo(() => room?.members.some((m) => m.userId === userId) || false, [room?.members, userId]);
+  const [isAutoHealing, setIsAutoHealing] = useState(false);
+  const syncEscalationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Keep refs in sync
   useEffect(() => {
     isRoomCreatorRef.current = isRoomCreator;
     roomIsPlayingRef.current = room?.isPlaying || false;
   }, [isRoomCreator, room?.isPlaying]);
+
+  // YouTube API Pre-loading
+  useEffect(() => {
+    if (!roomId) return;
+
+    // Eagerly load the YouTube API as soon as we have a roomId
+    // This happens in parallel with room/user data fetching
+    import('@/src/lib/youtube/youtube-api.utils').then(module => {
+      console.log('[Player] Eagerly pre-loading YouTube API...');
+      module.loadYouTubeAPI().catch(err => {
+        console.warn('[Player] Eager pre-load failed (will retry):', err);
+      });
+    });
+  }, [roomId]);
 
   // Initialize YouTube Player API
   useEffect(() => {
@@ -149,17 +219,23 @@ export default function RoomPage() {
     let mounted = true;
 
     const initPlayer = async () => {
+      console.log('[Player] Initializing for video:', room.currentStream!.stream.extractedId);
       try {
         const YT = await (await import('@/src/lib/youtube/youtube-api.utils')).loadYouTubeAPI();
 
-        if (!mounted) return;
+        if (!mounted) {
+          console.log('[Player] Component unmounted before API loaded');
+          return;
+        }
 
+        console.log('[Player] API loaded, creating YT.Player...');
         // Create player
         player = new YT.Player('youtube-player', {
           videoId: room.currentStream!.stream.extractedId,
           playerVars: {
             autoplay: 1, // Auto-play when stream changes
-            controls: 1,
+            controls: isRoomCreator ? 1 : 0, // Members are viewers only
+            disablekb: isRoomCreator ? 0 : 1, // Disable keyboard shortcuts for members
             enablejsapi: 1,
             origin: window.location.origin,
             rel: 0, // Don't show related videos from other channels
@@ -167,10 +243,34 @@ export default function RoomPage() {
           },
           events: {
             onReady: (event) => {
+              console.log('[Player] onReady fired');
               if (!mounted) return;
-              playerRef.current = event.target;
+              const targetPlayer = event.target;
+              playerRef.current = targetPlayer;
               setPlayerReady(true);
               setPlayerError(null);
+
+              // IMMEDIATE SYNC: If we already have playback data from fetchRoom, use it immediately
+              // This bypasses waiting for the first Ably broadcast
+              if (!isRoomCreatorRef.current && room?.playbackTime !== undefined) {
+                const playbackTime = room.playbackTime || 0;
+                const isPlaying = room.isPlaying;
+                console.log('[Sync] Immediate sync from initial room snapshot:', { playbackTime, isPlaying });
+
+                if (playbackTime > 0) {
+                  targetPlayer.seekTo(playbackTime, true);
+                }
+
+                if (isPlaying) {
+                  targetPlayer.playVideo();
+                } else {
+                  targetPlayer.pauseVideo();
+                }
+
+                // Update room state to reflect the sync
+                setRoom(prev => prev ? ({ ...prev, playbackTime, isPlaying }) : null);
+                roomIsPlayingRef.current = isPlaying;
+              }
             },
             onStateChange: (event) => {
               if (!mounted) return;
@@ -194,15 +294,20 @@ export default function RoomPage() {
                   updatePlaybackStateRef.current(currentTime, isPlaying, true);
                 }
               } else {
-                // Member protection: If Host is paused, Member cannot manually play
+                // Member protection: Aggressively revert manual playback attempts
                 if (event.data === PlayerState.PLAYING && !roomIsPlayingRef.current) {
                   console.log('[Member] Host is paused, reverting manual play...');
                   event.target.pauseVideo();
                   addToast('The host has paused the video', 'info');
+                } else if (event.data === PlayerState.PAUSED && roomIsPlayingRef.current) {
+                  console.log('[Member] Host is playing, reverting manual pause...');
+                  event.target.playVideo();
+                  addToast('The host is currently playing the video', 'info');
                 }
               }
             },
             onError: (event) => {
+              console.error('[Player] onError fired:', event.data);
               if (!mounted) return;
               const errorMsg = `Player error: ${event.data}`;
               setPlayerError(errorMsg);
@@ -230,7 +335,7 @@ export default function RoomPage() {
       playerRef.current = null;
       setPlayerReady(false);
     };
-  }, [room?.currentStream?.stream.extractedId]);
+  }, [room?.currentStream?.stream.extractedId, isRoomCreator]);
 
   // Ref for handlePlayStream to avoid circular dependency
   const handlePlayStreamRef = useRef<((streamId: string) => Promise<void>) | null>(null);
@@ -244,8 +349,16 @@ export default function RoomPage() {
       image: session.user.image || null,
     } : undefined,
     isCreator: isRoomCreator || false,
-    onPresenceUpdate: (data) => {
-      console.log('Presence update:', data);
+    onPresenceUpdate: (update) => {
+      setPresentMemberIds(prev => {
+        const next = new Set(prev);
+        if (update.action === 'enter' || update.action === 'update') {
+          next.add(update.clientId);
+        } else if (update.action === 'leave') {
+          next.delete(update.clientId);
+        }
+        return next;
+      });
     },
     onSkipUpdate: (data) => {
       setSkipInfo(data);
@@ -371,13 +484,25 @@ export default function RoomPage() {
               }
             }
           } else if (drift > 0.1) {
-            // Micro-correction for very small drifts that don't trigger Soft Sync threshold
-            // This ensures we don't ignore "almost perfect" sync
+            // Micro-correction for very small drifts
             const isBehind = actualTime < targetTime;
             const rate = isBehind ? 1.01 : 0.99;
-            // Unlogged micro-adjustment
             player.setPlaybackRate(rate);
             setTimeout(() => { if (playerRef.current) playerRef.current.setPlaybackRate(1.0); }, 500);
+          }
+
+          // Drift Escalation: If we have drift for too long despite rate adjustments, force a seek
+          if (drift > 0.5) {
+            if (!syncEscalationTimerRef.current) {
+              syncEscalationTimerRef.current = setTimeout(() => {
+                console.log('[Sync] Drift not resolved via rate adjustments. Escalating to Hard Sync.');
+                player.seekTo(targetTime, true);
+                syncEscalationTimerRef.current = null;
+              }, 4000); // Wait 4s for rate adjustment to work
+            }
+          } else if (syncEscalationTimerRef.current) {
+            clearTimeout(syncEscalationTimerRef.current);
+            syncEscalationTimerRef.current = null;
           }
 
           // Sync play/pause state
@@ -440,10 +565,79 @@ export default function RoomPage() {
         return prev;
       });
 
-      // Still fetch to ensure consistency/receive full data, but UI should have already updated
-      fetchRoom();
+      // Clear user's upvote for this stream immediately (Optimistic Rave logic)
+      setUpvotedStreams(prev => {
+        if (!prev.has(streamId)) return prev;
+        const next = new Set(prev);
+        next.delete(streamId);
+        return next;
+      });
+
+      // Update room state to reset votes for this stream (Optimistic)
+      setRoom(prev => {
+        if (!prev) return null;
+
+        // Reset votes for the playing stream
+        const updatedStreams = prev.streams.map(s => {
+          if (s.streamId === streamId) {
+            return {
+              ...s,
+              upvoteCount: 0,
+              upvotes: []
+            };
+          }
+          return s;
+        });
+
+        return {
+          ...prev,
+          streams: updatedStreams
+        };
+      });
+
+      // NOTE: We do NOT call fetchRoom() here.
+      // 1. If we are the creator, we just called /play and that returns the fresh room data (handled elsewhere).
+      // 2. If we are a member, the Ably message is the trigger, and often the API fetch might race with the DB write.
+      // 3. We rely on the periodic sync or the /play response to eventually consistency.
+      // calling fetchRoom() here often returns the OLD currentStream if the DB write is lagging behind the Ably message.
     },
   });
+
+  // Migration logic: Trigger host takeover if creator is gone
+  const shouldTrigerMigration = useMemo(() => {
+    if (!room || !userId || isRoomCreator || !isConnected) return false;
+
+    // 1. Is the creator present?
+    const isCreatorPresent = presentMemberIds.has(room.creator.id);
+    if (isCreatorPresent) return false;
+
+    // 2. Am I the oldest member CURRENTLY present?
+    const activeMembers = room.members
+      .filter(m => presentMemberIds.has(m.userId))
+      .sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
+
+    const oldestActiveUserId = activeMembers[0]?.userId;
+    return oldestActiveUserId === userId;
+  }, [room, userId, presentMemberIds, isRoomCreator, isConnected]);
+
+  useEffect(() => {
+    if (shouldTrigerMigration && roomId) {
+      const migrateTimeout = setTimeout(async () => {
+        console.log('[Migration] Creator missing. Triggering takeover...');
+        try {
+          const res = await fetch(`/api/rooms/${roomId}/migrate`, { method: 'POST' });
+          if (res.ok) {
+            console.log('[Migration] Successfully claimed creator role');
+            addToast('You are now the room host', 'success');
+          }
+        } catch (err) {
+          console.error('[Migration] Failed to migrate:', err);
+        }
+      }, 5000); // 5s debounce to allow for reconnects
+
+      return () => clearTimeout(migrateTimeout);
+    }
+  }, [shouldTrigerMigration, roomId, addToast]);
 
 
 
@@ -507,23 +701,90 @@ export default function RoomPage() {
     };
   }, [roomId, userId]); */
 
-  // Get user ID
-  useEffect(() => {
-    if (session?.user?.email) {
-      fetchUserId();
-    }
-  }, [session]);
+  // Manual Sync Recovery
+  const forceSyncWithHost = useCallback(() => {
+    if (!room || !playerRef.current || !playerReady) return;
 
-  // NOTE: Using direct YouTube iframe embed instead of IFrame Player API
-  // The API was failing to load due to environmental blocking (extensions, firewall, etc.)
-  // Direct iframe is simpler and more reliable across different environments
+    setIsAutoHealing(true);
+    const now = Date.now();
+    // Use the latest authoritative data from either ref or initial room object
+    const snapshot = latestPlaybackDataRef.current || {
+      playbackTime: room.playbackTime || 0,
+      isPlaying: room.isPlaying,
+      serverTimestamp: room.lastSyncTime ? new Date(room.lastSyncTime).getTime() : now
+    };
 
-  // Fetch room data
-  useEffect(() => {
-    if (roomId) {
-      fetchRoom();
+    const latency = snapshot.serverTimestamp ? (now + (clockOffsetRef.current || 0)) - snapshot.serverTimestamp : 0;
+    const targetTime = snapshot.isPlaying
+      ? snapshot.playbackTime + (latency / 1000)
+      : snapshot.playbackTime;
+
+    console.log('[Sync] Force re-syncing to:', targetTime);
+    playerRef.current.seekTo(targetTime, true);
+    if (snapshot.isPlaying) {
+      playerRef.current.playVideo();
+    } else {
+      playerRef.current.pauseVideo();
     }
-  }, [roomId, fetchRoom]);
+
+    setTimeout(() => setIsAutoHealing(false), 2000);
+    addToast('Synchronizing with host...', 'info');
+  }, [room, playerReady, isConnected]);
+
+  // Watchdog Timer for player stalls
+  useEffect(() => {
+    if (!room?.isPlaying || !playerReady || !playerRef.current || isRoomCreator) return;
+
+    const checkStall = () => {
+      const state = playerRef.current?.getPlayerState();
+      // If host is playing but we are stuck/paused for too long
+      // Only trigger if we aren't already trying to sync
+      if ((state === PlayerState.BUFFERING || state === PlayerState.PAUSED || state === -1) && room.isPlaying) {
+        console.log('[Watchdog] Player stalled while host is playing. Triggering auto-heal...');
+        forceSyncWithHost();
+      }
+    };
+
+    const stallInterval = setInterval(checkStall, 6000); // Check every 6s
+
+    return () => clearInterval(stallInterval);
+  }, [room?.isPlaying, playerReady, isRoomCreator, forceSyncWithHost]);
+
+  // Parallel initialization: Fetch Room and User concurrently
+  useEffect(() => {
+    if (!roomId) return;
+
+    const initData = async () => {
+      try {
+        console.log('[Room] Concurrent data fetch starting...');
+        const [roomRes, userRes] = await Promise.all([
+          fetch(`/api/rooms/${roomId}`, { credentials: 'include' }),
+          fetch('/api/user', { credentials: 'include' })
+        ]);
+
+        if (roomRes.ok) {
+          const roomData = await roomRes.json();
+          setRoom(roomData);
+          setError(null);
+        } else if (roomRes.status === 404) {
+          router.push('/dashboard');
+          return;
+        }
+
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUserId(userData.id);
+        }
+      } catch (err) {
+        console.error('[Room] Initialization error:', err);
+        setError('Failed to load room data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initData();
+  }, [roomId, router]);
 
   // Auto-select most upvoted stream if no current stream is set
   useEffect(() => {
@@ -648,7 +909,7 @@ export default function RoomPage() {
       .map(s => ({
         id: s.stream.extractedId,
         title: s.stream.title,
-        thumbnail: s.stream.smallImg,
+        thumbnail: s.stream.smallImg || `https://i.ytimg.com/vi/${s.stream.extractedId}/mqdefault.jpg`,
         channelTitle: 'Trending in Room', // Generic label instead of adder's email
         upvoteCount: s.upvoteCount
       }));
@@ -658,6 +919,7 @@ export default function RoomPage() {
       const existingStream = room.streams.find(s => s.stream.extractedId === video.id);
       return {
         ...video,
+        thumbnail: video.thumbnail || `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`,
         upvoteCount: existingStream?.upvoteCount || 0
       };
     });
@@ -890,7 +1152,12 @@ export default function RoomPage() {
         fetchRoom();
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to join room');
+        if (data.errorCode === 'ALREADY_MEMBER' || data.error?.includes('already a member')) {
+          console.log('[Room] User already a member, fetching room data...');
+          fetchRoom();
+        } else {
+          setError(data.error || 'Failed to join room');
+        }
       }
     } catch (error) {
       console.error('Error joining room:', error);
@@ -899,6 +1166,13 @@ export default function RoomPage() {
       setIsJoining(false);
     }
   };
+
+  // Auto-join if user is authenticated and not a member
+  useEffect(() => {
+    if (room && userId && !isRoomMember && !isRoomCreator && !isJoining && !error) {
+      handleJoin();
+    }
+  }, [room?.id, userId, isRoomMember, isRoomCreator, isJoining, error]);
 
   const handleLeave = async () => {
     if (!roomId) return;
@@ -929,9 +1203,43 @@ export default function RoomPage() {
 
 
   const handleUpvote = async (streamId: string) => {
-    if (!userId || !roomId || isUpvoting) return;
+    if (!userId || !roomId) return;
 
     const isUpvoted = upvotedStreams.has(streamId);
+
+    // Deep Optimistic Update
+    const previousRoom = room;
+    const previousUpvoted = upvotedStreams;
+
+    // 1. Update upvoted set
+    const newUpvoted = new Set(upvotedStreams);
+    if (isUpvoted) {
+      newUpvoted.delete(streamId);
+    } else {
+      newUpvoted.add(streamId);
+      triggerUpvoteEffect(streamId);
+    }
+    setUpvotedStreams(newUpvoted);
+
+    // 2. Update room streams list count
+    if (room) {
+      setRoom({
+        ...room,
+        streams: room.streams.map(s => {
+          if (s.streamId === streamId) {
+            return {
+              ...s,
+              upvoteCount: isUpvoted ? Math.max(0, s.upvoteCount - 1) : s.upvoteCount + 1,
+              // Add/remove current user from upvotes list for avatar display
+              upvotes: isUpvoted
+                ? s.upvotes.filter(v => v.userId !== userId)
+                : [...s.upvotes, { id: 'temp', userId }]
+            };
+          }
+          return s;
+        })
+      });
+    }
 
     try {
       setIsUpvoting(streamId);
@@ -944,18 +1252,17 @@ export default function RoomPage() {
         credentials: 'include',
       });
 
-      if (response.ok) {
-        const newUpvotedStreams = new Set(upvotedStreams);
-        if (isUpvoted) {
-          newUpvotedStreams.delete(streamId);
-        } else {
-          newUpvotedStreams.add(streamId);
-        }
-        setUpvotedStreams(newUpvotedStreams);
-        fetchRoom();
+      if (!response.ok) {
+        throw new Error('Failed to upvote');
       }
+
+      // Re-fetch to ensure server-side consistency, but UI is already correct
+      fetchRoom();
     } catch (error) {
       console.error('Error upvoting:', error);
+      // Revert on failure
+      setRoom(previousRoom);
+      setUpvotedStreams(previousUpvoted);
     } finally {
       setIsUpvoting(null);
     }
@@ -1180,7 +1487,50 @@ export default function RoomPage() {
       // Already exists -> Upvote it
       handleUpvote(existingStream.streamId);
     } else {
-      // Doesn't exist -> Add it (Backend now auto-upvotes)
+      // Deep Optimistic Add for Member
+      const tempId = `temp-${video.id}`;
+      const previousRoom = room;
+
+      setRoom(prev => {
+        if (!prev) return null;
+        const optimisticStream = {
+          id: tempId,
+          streamId: tempId,
+          roomId: prev.id,
+          addedById: userId || '',
+          played: false,
+          playedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          order: prev.streams.length + 1,
+          stream: {
+            id: tempId,
+            title: video.title,
+            url: `https://www.youtube.com/watch?v=${video.id}`,
+            extractedId: video.id,
+            bigImg: video.thumbnail || '',
+            smallImg: video.thumbnail || '',
+            type: 'Youtube' as const,
+            active: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: userId || ''
+          },
+          addedBy: { id: userId || '', email: '' },
+          upvoteCount: 1,
+          upvotes: [{ id: 'temp-vote', userId: userId || '' }],
+          _count: { upvotes: 1 }
+        };
+
+        return {
+          ...prev,
+          streams: [...prev.streams, optimisticStream]
+        };
+      });
+
+      triggerUpvoteEffect(tempId);
+      addToast('Added to queue', 'success');
+
       try {
         const response = await fetch(`/api/rooms/${roomId}/streams`, {
           method: 'POST',
@@ -1189,19 +1539,26 @@ export default function RoomPage() {
           body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${video.id}` })
         });
 
-        if (response.ok) {
-          addToast('Added to queue', 'success');
-          fetchRoom();
+        if (!response.ok) {
+          throw new Error('Failed to add video');
         }
+        fetchRoom();
       } catch (error) {
         console.error('Error adding video:', error);
+        setRoom(previousRoom);
         addToast('Failed to add video', 'error');
       }
     }
   };
 
 
-  if (loading) {
+  // Determine if we should show the loading skeleton
+  // We show it if: 
+  // 1. Initial room data is loading
+  // 2. User is authenticated but not yet a member/creator and the JOIN process is in progress
+  const isDirectEntryLoading = loading || (userId && !isRoomMember && !isRoomCreator && isJoining);
+
+  if (isDirectEntryLoading) {
     return (
       <div className="min-h-screen bg-black">
         <Appbar />
@@ -1490,22 +1847,48 @@ export default function RoomPage() {
                   </h2>
                   <div className="flex items-center gap-4">
                     {playerReady && (
-                      <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20 text-[10px] font-bold uppercase tracking-wider text-green-500">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-                        Synchronized
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20 text-[10px] font-bold uppercase tracking-wider text-green-500">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                          Synchronized
+                        </div>
+                        {isAutoHealing && (
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20 text-[10px] font-bold uppercase tracking-wider text-blue-400 animate-pulse">
+                            Auto-Healing
+                          </div>
+                        )}
+                        {!isRoomCreator && (
+                          <button
+                            onClick={forceSyncWithHost}
+                            className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 hover:border-white/20 text-gray-400 hover:text-white transition-all"
+                            title="Force Sync with Host"
+                          >
+                            <RefreshCw size={14} className={isAutoHealing ? 'animate-spin' : ''} />
+                          </button>
+                        )}
                       </div>
                     )}
                     <div className="h-4 w-px bg-white/10" />
                     <button
                       onClick={() => handleUpvote(room.currentStream!.stream.id)}
                       disabled={isUpvoting === room.currentStream!.stream.id || !userId}
-                      className={`group flex items-center gap-2.5 px-5 py-2 rounded-xl border transition-all font-bold ${upvotedStreams.has(room.currentStream!.stream.id)
+                      className={`group relative flex items-center gap-2.5 px-5 py-2 rounded-xl border transition-all font-bold overflow-visible ${upvotedStreams.has(room.currentStream!.stream.id)
                         ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-white text-black border-transparent hover:scale-105 active:scale-95'
+                        : 'bg-white text-black border-transparent hover:scale-110 active:scale-90 shadow-xl shadow-white/5'
                         }`}
                     >
-                      <ThumbsUp size={18} className={upvotedStreams.has(room.currentStream!.stream.id) ? 'fill-white' : ''} />
-                      <span>{room.streams.find(rs => rs.streamId === room.currentStream!.stream.id)?.upvoteCount ?? 0}</span>
+                      <VotedParticles streamId={room.currentStream.stream.id} effects={upvoteEffects} />
+                      <motion.div
+                        animate={upvotedStreams.has(room.currentStream.stream.id) ? { scale: [1, 1.2, 1] } : {}}
+                        transition={{ duration: 0.3 }}
+                        className="flex items-center gap-2.5"
+                      >
+                        <ThumbsUp size={18} className={upvotedStreams.has(room.currentStream!.stream.id) ? 'fill-white' : ''} />
+                        <span>{room.streams.find(rs => rs.streamId === room.currentStream!.stream.id)?.upvoteCount ?? 0}</span>
+                      </motion.div>
+                      {!upvotedStreams.has(room.currentStream.stream.id) && (
+                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity blur-xl -z-10 rounded-full" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1546,191 +1929,327 @@ export default function RoomPage() {
               {/* Recommendations */}
               <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col h-full max-h-[460px] shadow-2xl">
                 {/* Search Header */}
-                <div className="p-6 border-b border-white/10 bg-white/[0.02] space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-white tracking-tight">
-                      {searchQuery ? 'Search Results' : 'Smart Suggestions'}
-                    </h3>
-                    {!searchQuery && (
-                      <div className="px-2 py-0.5 bg-gray-500/20 rounded-md text-[10px] font-bold text-gray-400">BETA</div>
-                    )}
-                  </div>
-
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search size={16} className="text-gray-500 group-focus-within:text-white transition-colors" />
-                    </div>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search for videos..."
-                      className="block w-full pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all font-medium"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => {
-                          setSearchQuery('');
-                          setSearchResults([]);
-                        }}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      >
-                        <X size={14} className="text-gray-500 hover:text-white transition-colors" />
-                      </button>
-                    )}
-                  </div>
+                <div className="hidden border-b border-white/10 bg-white/[0.02] sm:grid grid-cols-2">
+                  <button
+                    onClick={() => setActiveTab('queue')}
+                    className={`p-4 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'queue' ? 'bg-white/5 text-white border-b-2 border-white' : 'text-gray-500 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    Queue ({room.streams.length - (room.currentStream ? 1 : 0)})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('suggestions')}
+                    className={`p-4 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'suggestions' ? 'bg-white/5 text-white border-b-2 border-white' : 'text-gray-500 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    Suggestions
+                  </button>
                 </div>
+                {activeTab === 'suggestions' && (
+                  <div className="p-6 border-b border-white/10 bg-white/[0.02] space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-white tracking-tight">
+                        {searchQuery ? 'Search Results' : 'Smart Suggestions'}
+                      </h3>
+                      {!searchQuery && (
+                        <div className="px-2 py-0.5 bg-gray-500/20 rounded-md text-[10px] font-bold text-gray-400">BETA</div>
+                      )}
+                    </div>
+
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={16} className="text-gray-500 group-focus-within:text-white transition-colors" />
+                      </div>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search for videos..."
+                        className="block w-full pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all font-medium"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery('');
+                            setSearchResults([]);
+                          }}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                          <X size={14} className="text-gray-500 hover:text-white transition-colors" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                  {isSearching ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
-                      <Loader2 className="animate-spin" size={24} />
-                      <span className="text-xs font-bold uppercase tracking-wider">Searching...</span>
-                    </div>
-                  ) : searchQuery ? (
-                    searchResults.length > 0 ? (
-                      searchResults.map((video) => (
-                        <motion.div
-                          key={video.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          whileHover={{ scale: 1.02, x: 4 }}
-                          onClick={() => handleRecommendUpvote(video)}
-                          className="group flex gap-4 p-3 bg-white/[0.02] hover:bg-white/[0.08] border border-white/[0.05] hover:border-white/10 rounded-2xl cursor-pointer transition-all active:scale-95"
-                        >
-                          <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
-                            <img
-                              src={video.thumbnail}
-                              alt={video.title}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Plus size={20} className="text-white transform scale-50 group-hover:scale-100 transition-transform" />
-                            </div>
+                  {activeTab === 'queue' ? (
+                    sortedStreams.filter(s => s.streamId !== room.currentStream?.stream.id).length > 0 ? (
+                      sortedStreams
+                        .filter(s => s.streamId !== room.currentStream?.stream.id)
+                        .map((stream) => {
+                          const video = {
+                            id: stream.stream.extractedId,
+                            title: stream.stream.title,
+                            thumbnail: stream.stream.smallImg,
+                            channelTitle: 'In Queue',
+                            duration: '',
+                            streamId: stream.streamId
+                          };
+                          // Use same handler (it handles Play for creator, Upvote for member)
+                          // But wait, handleRecommendUpvote expects a 'video' object with 'id' as extractedId
+                          // We should verify what handleRecommendUpvote expects.
+                          // It expects { id, title, thumbnail, ... } where id is extractedId.
 
-                            {/* Voting Overlay */}
-                            {getUpvotersForVideo(video.id).length > 0 && (
-                              <>
-                                <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
-                                  {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
-                                    <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
-                                      {user?.image ? (
-                                        <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
-                                      ) : (
-                                        <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
+                          return (
+                            <motion.div
+                              key={stream.streamId}
+                              whileHover={{ scale: 1.02, x: 4 }}
+                              className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${stream.upvoteCount > 0
+                                ? 'bg-white/[0.05] border-white/20 shadow-lg shadow-white/5'
+                                : 'bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10'
+                                }`}
+                            >
+                              <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                                <img
+                                  src={stream.stream.smallImg || `https://i.ytimg.com/vi/${stream.stream.extractedId}/mqdefault.jpg`}
+                                  alt={stream.stream.title}
+                                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => isRoomCreator ? handlePlayStream(stream.streamId) : handleUpvote(stream.streamId)}
+                                    className={`p-2.5 rounded-xl border transition-all relative ${upvotedStreams.has(stream.streamId)
+                                      ? 'bg-white text-black border-white'
+                                      : 'bg-black/40 backdrop-blur-md border-white/20 text-white hover:bg-white hover:text-black hover:border-white'
+                                      }`}
+                                  >
+                                    <VotedParticles streamId={stream.streamId} effects={upvoteEffects} />
+                                    {isRoomCreator ? (
+                                      <Play size={16} className="fill-current ml-0.5" />
+                                    ) : (
+                                      upvotedStreams.has(stream.streamId) ? <Sparkles size={16} className="fill-current animate-pulse" /> : <ThumbsUp size={16} />
+                                    )}
+                                  </motion.button>
+                                </div>
+
+                                {(stream.upvoteCount > 0 || upvotedStreams.has(stream.streamId)) && (
+                                  <div className={`absolute inset-0 ring-2 rounded-xl pointer-events-none ${upvotedStreams.has(stream.streamId) ? 'ring-white/40' : 'ring-white/10'}`} />
+                                )}
+
+                                {/* Voting Overlay */}
+                                {(stream.upvotes?.length > 0) && (
+                                  <>
+                                    <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
+                                      {stream.upvotes.slice(0, 3).map((vote, i) => {
+                                        const member = room.members.find(m => m.userId === vote.userId);
+                                        return (
+                                          <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
+                                            {member?.user.image ? (
+                                              <img src={member.user.image} alt={member.user.email} className="w-full h-full object-cover" />
+                                            ) : (
+                                              <span className="text-white">{(member?.user.email || 'A')[0]?.toUpperCase()}</span>
+                                            )}
+                                          </div>
+                                        )
+                                      })}
+                                      {stream.upvotes.length > 3 && (
+                                        <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
+                                          +{stream.upvotes.length - 3}
+                                        </div>
                                       )}
                                     </div>
-                                  ))}
-                                  {getUpvotersForVideo(video.id).length > 3 && (
-                                    <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
-                                      +{getUpvotersForVideo(video.id).length - 3}
+                                    <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
+                                      <ThumbsUp size={10} className="fill-black" />
+                                      {stream.upvoteCount}
                                     </div>
-                                  )}
+                                  </>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                                <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                                  {stream.stream.title}
+                                </h4>
+                                <div className="flex items-center justify-between">
+                                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">
+                                    Queue Position: {sortedStreams.indexOf(stream)}
+                                  </p>
                                 </div>
-                                <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
-                                  <ThumbsUp size={10} className="fill-black" />
-                                  {getUpvotersForVideo(video.id).length}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
-                            <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
-                              {video.title}
-                            </h4>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
-                          </div>
-                        </motion.div>
-                      ))
+                              </div>
+                            </motion.div>
+                          );
+                        })
                     ) : (
-                      <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50">
-                        <Search size={40} className="mb-4 stroke-[1.5]" />
-                        <p className="text-xs font-bold uppercase tracking-widest">No results found</p>
+                      <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50 grayscale">
+                        <div className="p-4 bg-white/5 rounded-full mb-4">
+                          <Play size={32} className="stroke-[1.5] ml-1" />
+                        </div>
+                        <p className="text-xs font-bold uppercase tracking-widest mb-2">Queue is Empty</p>
+                        <p className="text-[10px] max-w-[200px]">Switch to Suggestions or Search to add videos</p>
                       </div>
                     )
                   ) : (
-                    // Default Recommendations View
-                    isLoadingRecommended ? (
-                      Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="flex gap-4 p-3 bg-white/5 rounded-2xl animate-pulse">
-                          <div className="w-24 h-14 bg-white/10 rounded-xl shrink-0" />
-                          <div className="space-y-2 flex-1 pt-1">
-                            <div className="h-4 bg-white/10 rounded-lg w-full" />
-                            <div className="h-3 bg-white/10 rounded-lg w-2/3" />
-                          </div>
-                        </div>
-                      ))
-                    ) : displayedSuggestions.length > 0 ? (
-                      displayedSuggestions.map((video) => (
-                        <motion.div
-                          key={video.id}
-                          whileHover={{ scale: 1.02, x: 4 }}
-                          onClick={() => handleRecommendUpvote(video)}
-                          className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${(video as any).upvoteCount > 0
-                            ? 'bg-white/[0.05] border-white/20 shadow-lg shadow-white/5'
-                            : 'bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10'
-                            }`}
-                        >
-                          <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
-                            <img
-                              src={video.thumbnail?.url || (video.thumbnail as any)}
-                              alt={video.title}
-                              className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Plus size={20} className="text-white transform scale-50 group-hover:scale-100 transition-transform" />
-                            </div>
-                            {video.duration && (
-                              <span className="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded-lg text-white font-bold">
-                                {video.duration}
-                              </span>
-                            )}
-
-                            {(video as any).upvoteCount > 0 && (
-                              <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl pointer-events-none" />
-                            )}
-
-                            {/* Voting Overlay */}
-                            {getUpvotersForVideo(video.id).length > 0 && (
-                              <>
-                                <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
-                                  {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
-                                    <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
-                                      {user?.image ? (
-                                        <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
-                                      ) : (
-                                        <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
-                                      )}
-                                    </div>
-                                  ))}
-                                  {getUpvotersForVideo(video.id).length > 3 && (
-                                    <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
-                                      +{getUpvotersForVideo(video.id).length - 3}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
-                                  <ThumbsUp size={10} className="fill-black" />
-                                  {getUpvotersForVideo(video.id).length}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
-                            <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
-                              {video.title}
-                            </h4>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50 grayscale">
-                        <Search size={40} className="mb-4 stroke-[3]" />
-                        <p className="text-xs font-bold uppercase tracking-widest">No suggestions available</p>
+                    isSearching ? (
+                      <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
+                        <Loader2 className="animate-spin" size={24} />
+                        <span className="text-xs font-bold uppercase tracking-wider">Searching...</span>
                       </div>
-                    )
-                  )}
+                    ) : searchQuery ? (
+                      searchResults.length > 0 ? (
+                        searchResults.map((video) => (
+                          <motion.div
+                            key={video.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ scale: 1.02, x: 4 }}
+                            onClick={() => handleRecommendUpvote(video)}
+                            className="group flex gap-4 p-3 bg-white/[0.02] hover:bg-white/[0.08] border border-white/[0.05] hover:border-white/10 rounded-2xl cursor-pointer transition-all active:scale-95"
+                          >
+                            <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                              <img
+                                src={video.thumbnail as string}
+                                alt={video.title}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Plus size={20} className="text-white transform scale-50 group-hover:scale-100 transition-transform" />
+                              </div>
+
+                              {/* Voting Overlay */}
+                              {getUpvotersForVideo(video.id).length > 0 && (
+                                <>
+                                  <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
+                                    {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
+                                      <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
+                                        {user?.image ? (
+                                          <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                    {getUpvotersForVideo(video.id).length > 3 && (
+                                      <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
+                                        +{getUpvotersForVideo(video.id).length - 3}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
+                                    <ThumbsUp size={10} className="fill-black" />
+                                    {getUpvotersForVideo(video.id).length}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                              <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                                {video.title}
+                              </h4>
+                              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50">
+                          <Search size={40} className="mb-4 stroke-[1.5]" />
+                          <p className="text-xs font-bold uppercase tracking-widest">No results found</p>
+                        </div>
+                      )
+                    ) : (
+                      // Default Recommendations View
+                      isLoadingRecommended ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className="flex gap-4 p-3 bg-white/5 rounded-2xl animate-pulse">
+                            <div className="w-24 h-14 bg-white/10 rounded-xl shrink-0" />
+                            <div className="space-y-2 flex-1 pt-1">
+                              <div className="h-4 bg-white/10 rounded-lg w-full" />
+                              <div className="h-3 bg-white/10 rounded-lg w-2/3" />
+                            </div>
+                          </div>
+                        ))
+                      ) : displayedSuggestions.length > 0 ? (
+                        displayedSuggestions.map((video) => (
+                          <motion.div
+                            key={video.id}
+                            whileHover={{ scale: 1.02, x: 4 }}
+                            className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${(video as any).upvoteCount > 0
+                              ? 'bg-white/[0.05] border-white/20 shadow-lg shadow-white/5'
+                              : 'bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10'
+                              }`}
+                          >
+                            <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                              <img
+                                src={video.thumbnail as string}
+                                alt={video.title}
+                                className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleRecommendUpvote(video)}
+                                  className={`p-2.5 rounded-xl border transition-all relative ${upvotedStreams.has(video.id)
+                                    ? 'bg-white text-black border-white'
+                                    : 'bg-black/40 backdrop-blur-md border-white/20 text-white hover:bg-white hover:text-black hover:border-white'
+                                    }`}
+                                >
+                                  <VotedParticles streamId={video.id} effects={upvoteEffects} />
+                                  {upvotedStreams.has(video.id) ? <Sparkles size={16} className="fill-current animate-pulse" /> : <Plus size={16} />}
+                                </motion.button>
+                              </div>
+                              {video.duration && (
+                                <span className="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded-lg text-white font-bold">
+                                  {video.duration}
+                                </span>
+                              )}
+
+                              {(video as any).upvoteCount > 0 && (
+                                <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl pointer-events-none" />
+                              )}
+
+                              {/* Voting Overlay */}
+                              {getUpvotersForVideo(video.id).length > 0 && (
+                                <>
+                                  <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
+                                    {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
+                                      <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
+                                        {user?.image ? (
+                                          <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                    {getUpvotersForVideo(video.id).length > 3 && (
+                                      <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
+                                        +{getUpvotersForVideo(video.id).length - 3}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
+                                    <ThumbsUp size={10} className="fill-black" />
+                                    {getUpvotersForVideo(video.id).length}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                              <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                                {video.title}
+                              </h4>
+                              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50 grayscale">
+                          <Search size={40} className="mb-4 stroke-[3]" />
+                          <p className="text-xs font-bold uppercase tracking-widest">No suggestions available</p>
+                        </div>
+                      )
+                    ))}
                 </div>
               </div>
             </motion.div>
@@ -1739,7 +2258,8 @@ export default function RoomPage() {
 
 
 
-        {!isRoomMember && (
+        {/* Direct Entry Wall (Only for Unauthenticated) */}
+        {!session && (
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1749,13 +2269,12 @@ export default function RoomPage() {
               <Users size={48} className="text-gray-500 stroke-[1.5]" />
             </div>
             <h2 className="text-2xl font-bold text-white tracking-widest uppercase mb-4">Awaiting Admission</h2>
-            <p className="text-gray-500 font-bold max-w-md mx-auto mb-10 text-xs uppercase tracking-[0.3em]">Authorize session to synchronized playback and collective curation</p>
+            <p className="text-gray-500 font-bold max-w-md mx-auto mb-10 text-xs uppercase tracking-[0.3em]">Sign in to synchronized playback and collective curation</p>
             <button
-              onClick={handleJoin}
-              disabled={isJoining || !session}
+              onClick={() => router.push('/api/auth/signin')}
               className="group relative px-12 py-5 bg-white text-black rounded-[2rem] font-bold overflow-hidden hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10"
             >
-              <span className="relative z-10 text-xl tracking-tight">JOIN COLLECTIVE</span>
+              <span className="relative z-10 text-xl tracking-tight">SIGN IN TO JOIN</span>
               <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           </motion.div>

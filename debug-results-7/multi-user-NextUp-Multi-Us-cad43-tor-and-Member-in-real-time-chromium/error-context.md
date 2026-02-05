@@ -1,0 +1,68 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+          - heading "NextUp" [level=1] [ref=e16]
+        - generic [ref=e17]:
+          - button "Home" [ref=e18]:
+            - img [ref=e19]
+            - generic [ref=e22]: Home
+          - button "Features" [ref=e23]:
+            - img [ref=e24]
+            - generic [ref=e27]: Features
+          - button "How It Works" [ref=e28]:
+            - img [ref=e29]
+            - generic [ref=e33]: How It Works
+        - generic [ref=e34]:
+          - button "Sign In" [ref=e35]:
+            - generic [ref=e36]: Sign In
+          - button "Sign Up" [ref=e37]:
+            - img [ref=e38]
+            - generic [ref=e41]: Sign Up
+    - generic [ref=e45]:
+      - generic [ref=e46]:
+        - img [ref=e48]
+        - heading "Create Account" [level=1] [ref=e51]
+        - paragraph [ref=e52]: Sign up to start streaming
+      - generic [ref=e53]: Unable to connect to the database. Please check if your database is active.
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e56]: Email
+          - generic [ref=e57]:
+            - img [ref=e58]
+            - textbox "Email" [ref=e61]:
+              - /placeholder: your@email.com
+              - text: creator-1770229254664-463@example.com
+        - generic [ref=e62]:
+          - generic [ref=e63]: Password
+          - generic [ref=e64]:
+            - img [ref=e65]
+            - textbox "Password" [ref=e68]:
+              - /placeholder: At least 6 characters
+              - text: Password123!
+        - generic [ref=e69]:
+          - generic [ref=e70]: Confirm Password
+          - generic [ref=e71]:
+            - img [ref=e72]
+            - textbox "Confirm Password" [ref=e75]:
+              - /placeholder: Confirm your password
+              - text: Password123!
+        - button "Create Account" [ref=e76]
+      - generic [ref=e77]:
+        - generic [ref=e82]: Or continue with
+        - button "Sign up with Google" [ref=e83]:
+          - img [ref=e84]
+          - text: Sign up with Google
+      - paragraph [ref=e89]:
+        - text: Already have an account?
+        - link "Sign in" [ref=e90] [cursor=pointer]:
+          - /url: /login
+  - button "Open Next.js Dev Tools" [ref=e96] [cursor=pointer]:
+    - img [ref=e97]
+  - alert [ref=e100]
+```

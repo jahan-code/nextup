@@ -8,6 +8,7 @@ import { ErrorCode } from "@/src/lib/api/errorConstants";
 import { AddStreamSchema } from "@/src/validation/rooms";
 import getYouTubeId from "get-youtube-id";
 import { StreamType } from "@/app/generated/prisma-v3";
+import { YouTubeService } from "@/src/features/youtube";
 
 export async function POST(
   req: NextRequest,
@@ -47,14 +48,47 @@ export async function POST(
       });
 
       if (!stream) {
+        // Fetch metadata before creating
+        let metadata = { title: "", smallImg: "", bigImg: "" };
+        try {
+          console.log(`[API] Fetching metadata for new stream: ${extractedId}`);
+          const details = await YouTubeService.getVideoDetails(extractedId);
+          metadata = {
+            title: details.title,
+            smallImg: details.thumbnail,
+            bigImg: details.thumbnail
+          };
+        } catch (err) {
+          console.warn(`[API] Failed to fetch metadata for ${extractedId}:`, err);
+        }
+
         stream = await prismaClient.stream.create({
           data: {
             UserId: user.id,
             url: data.url,
             extractedId,
             type: StreamType.Youtube,
+            title: metadata.title,
+            smallImg: metadata.smallImg,
+            bigImg: metadata.bigImg,
           },
         });
+      } else if (!stream.title || !stream.smallImg) {
+        // Update missing metadata for existing stream
+        try {
+          console.log(`[API] Updating missing metadata for existing stream: ${extractedId}`);
+          const details = await YouTubeService.getVideoDetails(extractedId);
+          stream = await prismaClient.stream.update({
+            where: { id: stream.id },
+            data: {
+              title: stream.title || details.title,
+              smallImg: stream.smallImg || details.thumbnail,
+              bigImg: stream.bigImg || details.thumbnail,
+            }
+          });
+        } catch (err) {
+          console.warn(`[API] Failed to update metadata for existing stream ${extractedId}:`, err);
+        }
       }
     }
 

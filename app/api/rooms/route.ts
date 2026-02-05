@@ -55,7 +55,12 @@ export async function GET(req: NextRequest) {
       // Get public rooms or all rooms
       const publicOnly = getBooleanQueryParam(req, "public") ?? false;
       const result = await RoomPortal.getRooms(publicOnly);
-      return successResponse(result);
+      const response = successResponse(result);
+
+      // Cache public room lists for 60 seconds (stale for 30s more)
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30');
+
+      return response;
     }
   } catch (error) {
     return handleApiError(error, "GET /api/rooms");

@@ -38,13 +38,30 @@ export async function POST(
       throw new BusinessLogicError(ErrorCode.ALREADY_MEMBER);
     }
 
+    // Check if there are any members in the room
+    const memberCount = await prismaClient.roomMember.count({
+      where: { roomId },
+    });
+
+    const role = memberCount === 0 ? RoomMemberRole.CREATOR : RoomMemberRole.MEMBER;
+
     // Add user as member
-    await prismaClient.roomMember.create({
-      data: {
-        roomId,
-        userId: user.id,
-        role: RoomMemberRole.MEMBER,
-      },
+    await prismaClient.$transaction(async (tx) => {
+      await tx.roomMember.create({
+        data: {
+          roomId,
+          userId: user.id,
+          role,
+        },
+      });
+
+      // If they are the first member, they must be the room creator
+      if (role === RoomMemberRole.CREATOR) {
+        await tx.room.update({
+          where: { id: roomId },
+          data: { creatorId: user.id },
+        });
+      }
     });
 
     // Initialize Ably for broadcasting

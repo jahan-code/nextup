@@ -1,0 +1,191 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+          - heading "NextUp" [level=1] [ref=e16]
+        - button "Dashboard" [ref=e18]:
+          - img [ref=e19]
+          - generic [ref=e24]: Dashboard
+        - generic [ref=e26]:
+          - img [ref=e28]
+          - button "Sign Out" [ref=e31]:
+            - img [ref=e32]
+            - generic [ref=e35]: Sign Out
+    - generic [ref=e38]: Connected
+    - generic [ref=e40]:
+      - banner [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]: Live Session
+            - heading "Sync Test Room 1770232958544" [level=1] [ref=e46]:
+              - text: Sync Test Room 1770232958544
+              - img [ref=e48]
+            - generic [ref=e50]:
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - text: C
+                  - img [ref=e54]
+                - generic [ref=e56]: M
+              - generic [ref=e58]:
+                - img [ref=e59]
+                - generic [ref=e64]: 2 Members
+              - generic [ref=e65]:
+                - img [ref=e66]
+                - generic [ref=e69]: 1 Streams
+          - button "Leave room" [ref=e73]:
+            - img [ref=e74]
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e81]:
+            - generic:
+              - generic:
+                - img
+                - paragraph: Initializing Interface
+            - iframe [ref=e82]:
+              - generic "YouTube Video Player" [ref=f1e3]:
+                - button "Channel watermark" [ref=f1e8] [cursor=pointer]:
+                  - img "Channel watermark" [ref=f1e9]
+                - generic [ref=f1e11]:
+                  - generic [ref=f1e12] [cursor=pointer]:
+                    - slider "Seek slider" [ref=f1e13]
+                    - generic:
+                      - generic:
+                        - generic:
+                          - slider "Click or scroll the panel for the precise seeking."
+                  - generic [ref=f1e24]:
+                    - generic [ref=f1e25]:
+                      - button "Pause (k)" [ref=f1e26] [cursor=pointer]:
+                        - img
+                      - generic [ref=f1e27]:
+                        - button "Mute (m)" [ref=f1e28] [cursor=pointer]:
+                          - generic [ref=f1e29]:
+                            - img
+                        - slider "Volume"
+                      - generic "0 Minutes 10 Seconds of 3 Minutes 33 Seconds" [ref=f1e33]: 0:10 / 3:33
+                    - generic [ref=f1e34]:
+                      - button "Subtitles/closed captions (c)" [ref=f1e35] [cursor=pointer]:
+                        - img
+                      - button "Settings" [ref=f1e36] [cursor=pointer]:
+                        - img
+                      - link "Watch on YouTube" [ref=f1e37] [cursor=pointer]:
+                        - /url: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+                        - img
+                      - button "Full screen (f)" [ref=f1e38] [cursor=pointer]:
+                        - img
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - heading [level=2]
+              - generic [ref=e85]:
+                - generic [ref=e86]: Synchronized
+                - button "1" [ref=e89]:
+                  - img [ref=e90]
+                  - generic [ref=e92]: "1"
+            - generic [ref=e93]:
+              - generic [ref=e94]:
+                - generic [ref=e95]: Vote Skip Status
+                - generic [ref=e96]: 0 / 0
+              - button "Skip Next" [ref=e98]:
+                - img [ref=e99]
+                - text: Skip Next
+        - generic [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - heading "Smart Suggestions" [level=3] [ref=e106]
+              - generic [ref=e107]: BETA
+            - generic [ref=e108]:
+              - generic:
+                - img
+              - textbox "Search for videos..." [ref=e109]
+          - generic [ref=e110]:
+            - generic [ref=e111] [cursor=pointer]:
+              - generic [ref=e112]:
+                - img "Rick Roll on IPhone keypad" [ref=e113]
+                - img [ref=e115]
+                - generic [ref=e116]: 0:09
+              - generic [ref=e117]:
+                - heading "Rick Roll on IPhone keypad" [level=4] [ref=e118]
+                - paragraph [ref=e119]: IPhone Keypad Songs
+            - generic [ref=e120] [cursor=pointer]:
+              - generic [ref=e121]:
+                - img "https://youtu.be/dQw4w9WgXcQ" [ref=e122]
+                - img [ref=e124]
+                - generic [ref=e125]: 0:05
+              - generic [ref=e126]:
+                - heading "https://youtu.be/dQw4w9WgXcQ" [level=4] [ref=e127]
+                - paragraph [ref=e128]: Setofaro
+            - generic [ref=e129] [cursor=pointer]:
+              - generic [ref=e130]:
+                - img "Rick Roll Link" [ref=e131]
+                - img [ref=e133]
+                - generic [ref=e134]: 0:15
+              - generic [ref=e135]:
+                - heading "Rick Roll Link" [level=4] [ref=e136]
+                - paragraph [ref=e137]: Rick Roll Links
+            - generic [ref=e138] [cursor=pointer]:
+              - generic [ref=e139]:
+                - img "https://youtu.be/dQw4w9WgXcQ" [ref=e140]
+                - img [ref=e142]
+                - generic [ref=e143]: 0:42
+              - generic [ref=e144]:
+                - heading "https://youtu.be/dQw4w9WgXcQ" [level=4] [ref=e145]
+                - paragraph [ref=e146]: Just A Regular Channel
+            - generic [ref=e147] [cursor=pointer]:
+              - generic [ref=e148]:
+                - img "https://youtu.be/dQw4w9WgXcQ" [ref=e149]
+                - img [ref=e151]
+                - generic [ref=e152]: 0:07
+              - generic [ref=e153]:
+                - heading "https://youtu.be/dQw4w9WgXcQ" [level=4] [ref=e154]
+                - paragraph [ref=e155]: Troubleshooting Error
+            - generic [ref=e156] [cursor=pointer]:
+              - generic [ref=e157]:
+                - img "I rickrolled my class and this happened" [ref=e158]
+                - img [ref=e160]
+                - generic [ref=e161]: 0:58
+              - generic [ref=e162]:
+                - heading "I rickrolled my class and this happened" [level=4] [ref=e163]
+                - paragraph [ref=e164]: soulr1der
+            - generic [ref=e165] [cursor=pointer]:
+              - generic [ref=e166]:
+                - img "https://youtu.be/dQw4w9WgXcQ" [ref=e167]
+                - img [ref=e169]
+                - generic [ref=e170]: 0:02
+              - generic [ref=e171]:
+                - heading "https://youtu.be/dQw4w9WgXcQ" [level=4] [ref=e172]
+                - paragraph [ref=e173]: https://youtu.be/dQw4w9WgXcQ
+            - generic [ref=e174] [cursor=pointer]:
+              - generic [ref=e175]:
+                - img "dQw4w9WgXcQ" [ref=e176]
+                - img [ref=e178]
+                - generic [ref=e179]: 1:00
+              - generic [ref=e180]:
+                - heading "dQw4w9WgXcQ" [level=4] [ref=e181]
+                - paragraph [ref=e182]: Europa Productions
+            - generic [ref=e183] [cursor=pointer]:
+              - generic [ref=e184]:
+                - img "Rick Astley Gets Rick Rolled (lol)" [ref=e185]
+                - img [ref=e187]
+                - generic [ref=e188]: 1:00
+              - generic [ref=e189]:
+                - heading "Rick Astley Gets Rick Rolled (lol)" [level=4] [ref=e190]
+                - paragraph [ref=e191]: Rip Van Scarface
+  - generic [ref=e196] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e197]:
+      - img [ref=e198]
+    - generic [ref=e201]:
+      - button "Open issues overlay" [ref=e202]:
+        - generic [ref=e203]:
+          - generic [ref=e204]: "1"
+          - generic [ref=e205]: "2"
+        - generic [ref=e206]:
+          - text: Issue
+          - generic [ref=e207]: s
+      - button "Collapse issues badge" [ref=e208]:
+        - img [ref=e209]
+  - alert [ref=e211]: NextUp
+```

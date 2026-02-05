@@ -49,6 +49,7 @@ export class RoomPortal {
           },
         },
         members: {
+          take: 5, // Limit to 5 members for preview
           include: {
             user: {
               select: {
@@ -88,6 +89,7 @@ export class RoomPortal {
           },
         },
         members: {
+          take: 5, // Limit to 5 members for preview
           include: {
             user: {
               select: {
@@ -142,6 +144,7 @@ export class RoomPortal {
           },
         },
         members: {
+          take: 5, // Limit to 5 members for preview
           include: {
             user: {
               select: {

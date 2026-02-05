@@ -10,6 +10,12 @@ import {
 
 export class YouTubeService {
   /**
+   * Cache for YouTube search results
+   */
+  private static cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private static CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
+  /**
    * Search for YouTube videos
    */
   static async searchVideos(query: string): Promise<YouTubeSearchResponse> {
@@ -21,6 +27,13 @@ export class YouTubeService {
     }
 
     try {
+      // Check cache first
+      const cacheKey = `search:${validatedQuery.q}`;
+      const cached = YouTubeService.cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < YouTubeService.CACHE_TTL) {
+        return cached.data;
+      }
+
       // Search YouTube videos
       const results = await youtubesearchapi.GetListByKeyword(validatedQuery.q, false, 10);
 
@@ -45,7 +58,12 @@ export class YouTubeService {
         duration: item.length?.simpleText || "",
       })) || [];
 
-      return { videos };
+      const response = { videos };
+
+      // Store in cache
+      YouTubeService.cache.set(cacheKey, { data: response, timestamp: Date.now() });
+
+      return response;
     } catch (error) {
       console.error(`[YouTubeService] Search failed for "${validatedQuery.q}":`, error);
       throw error;
@@ -65,6 +83,13 @@ export class YouTubeService {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout')), 10000)
       );
+
+      // Check cache first
+      const cacheKey = `related:${videoId}`;
+      const cached = YouTubeService.cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < YouTubeService.CACHE_TTL) {
+        return cached.data;
+      }
 
       const detailsPromise = youtubesearchapi.GetVideoDetails(videoId);
 
@@ -96,7 +121,12 @@ export class YouTubeService {
         }
       }
 
-      return { videos };
+      const response = { videos };
+
+      // Store in cache
+      YouTubeService.cache.set(cacheKey, { data: response, timestamp: Date.now() });
+
+      return response;
     } catch (error) {
       // On timeout or error, try a quick fallback search
       console.warn(`[YouTubeService] Primary fetch failed for ${videoId}, attempting fallback:`, error);
@@ -109,6 +139,33 @@ export class YouTubeService {
         console.error(`[YouTubeService] All attempts failed for ${videoId}:`, fallbackError);
         return { videos: [] };
       }
+    }
+  }
+
+  /**
+   * Get specific video details
+   */
+  static async getVideoDetails(videoId: string): Promise<YouTubeVideo> {
+    if (!videoId) {
+      throw new ValidationError("Video ID is required");
+    }
+
+    try {
+      const result = await youtubesearchapi.GetVideoDetails(videoId) as any;
+
+      return {
+        id: videoId,
+        title: result.title || "",
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        extractedId: videoId,
+        thumbnail: result.thumbnail?.thumbnails?.[result.thumbnail.thumbnails.length - 1]?.url ||
+          result.thumbnail?.thumbnails?.[0]?.url || "",
+        channelTitle: result.channelTitle || "",
+        duration: result.length?.simpleText || "",
+      };
+    } catch (error) {
+      console.error(`[YouTubeService] Failed to get details for ${videoId}:`, error);
+      throw error;
     }
   }
 }

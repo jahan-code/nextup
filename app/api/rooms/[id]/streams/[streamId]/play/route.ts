@@ -28,26 +28,59 @@ export async function PUT(
       throw new NotFoundError(ErrorCode.STREAM_NOT_FOUND, "Stream not found in room");
     }
 
-    const updatedRoom = await prismaClient.room.update({
+    // Get the current stream ID before updating (so we can delete it after)
+    const room = await prismaClient.room.findUnique({
       where: { id: roomId },
-      data: { currentStreamId: roomStream.id },
-      include: {
-        currentStream: {
-          include: {
-            stream: {
-              select: {
-                id: true,
-                title: true,
-                url: true,
-                extractedId: true,
-                bigImg: true,
-                smallImg: true,
+      select: { currentStreamId: true }
+    });
+
+    const oldCurrentStreamId = room?.currentStreamId;
+
+    // Transaction to update room AND reset stream votes
+    const [updatedRoom] = await prismaClient.$transaction([
+      prismaClient.room.update({
+        where: { id: roomId },
+        data: { currentStreamId: roomStream.id },
+        include: {
+          currentStream: {
+            include: {
+              stream: {
+                select: {
+                  id: true,
+                  title: true,
+                  url: true,
+                  extractedId: true,
+                  bigImg: true,
+                  smallImg: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      }),
+      // Reset votes for the played stream (Rave logic: playing consumes votes)
+      prismaClient.roomStream.update({
+        where: { id: roomStream.id },
+        data: {
+          upvotes: {
+            deleteMany: {}, // Clear all upvotes
+          },
+        },
+      }),
+    ]);
+
+    // Delete the old stream from the queue (if it exists and is different from the new one)
+    if (oldCurrentStreamId && oldCurrentStreamId !== roomStream.id) {
+      console.log(`[Auto-Remove] Deleting old stream from queue: ${oldCurrentStreamId}`);
+      await prismaClient.roomStream.delete({
+        where: { id: oldCurrentStreamId }
+      }).catch((err) => {
+        console.log(`[Auto-Remove] Failed to delete old stream (may already be deleted): ${err.message}`);
+      });
+      console.log(`[Auto-Remove] Successfully removed old stream from queue`);
+    } else {
+      console.log(`[Auto-Remove] No old stream to delete (oldId: ${oldCurrentStreamId}, newId: ${roomStream.id})`);
+    }
 
     return successResponse(updatedRoom);
   } catch (error) {
