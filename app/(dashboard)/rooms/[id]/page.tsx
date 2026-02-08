@@ -1,20 +1,47 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter, useParams } from 'next/navigation';
-import { Appbar, SkeletonPlayer, SkeletonStreamCard, SkeletonListItem } from '@/src/components';
-import { ThumbsUp, Loader2, Plus, Users, LogOut, Search, X, Play, Crown, RefreshCw, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { YouTubePlayer } from '@/src/types';
-import { PlayerState, type YouTubeVideo } from '@/src/types/youtube';
-import { useRoomAbly } from '@/src/hooks';
-import FloatingReactions from '@/src/components/rooms/FloatingReactions';
-import { useToast } from '@/src/components/ui/Toast';
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import { useSession } from "next-auth/react";
+import { useRouter, useParams } from "next/navigation";
 import {
-  getPlayerStateName
-} from '@/src/lib/youtube/youtube-api.utils';
-import { SYNC_THRESHOLDS, SYNC_INTERVALS, PLAYBACK_RATE } from '@/src/constants/rooms';
+  Appbar,
+  SkeletonPlayer,
+  SkeletonStreamCard,
+  SkeletonListItem,
+} from "@/src/components";
+import {
+  ThumbsUp,
+  Loader2,
+  Plus,
+  Users,
+  LogOut,
+  Search,
+  X,
+  Play,
+  Crown,
+  RefreshCw,
+  Sparkles,
+  ListMusic,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import type { YouTubePlayer } from "@/src/types";
+import { PlayerState, type YouTubeVideo } from "@/src/types/youtube";
+import { useRoomAbly } from "@/src/hooks";
+import FloatingReactions from "@/src/components/rooms/FloatingReactions";
+import { useToast } from "@/src/components/ui/Toast";
+import BottomChatBar from "@/src/components/rooms/chat/BottomChatBar";
+import { getPlayerStateName } from "@/src/lib/youtube/youtube-api.utils";
+import {
+  SYNC_THRESHOLDS,
+  SYNC_INTERVALS,
+  PLAYBACK_RATE,
+} from "@/src/constants/rooms";
 interface RoomStream {
   id: string;
   streamId: string;
@@ -80,30 +107,43 @@ interface Room {
 
 // YouTube types are imported from shared types file
 
-const VotedParticles = ({ streamId, effects }: { streamId: string; effects: { id: string; streamId: string }[] }) => {
-  const myEffects = effects.filter(e => e.streamId === streamId);
+const VotedParticles = ({
+  streamId,
+  effects,
+}: {
+  streamId: string;
+  effects: { id: string; streamId: string }[];
+}) => {
+  const myEffects = effects.filter((e) => e.streamId === streamId);
   if (myEffects.length === 0) return null;
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-visible z-[100]">
       <AnimatePresence>
-        {myEffects.map(eff => (
-          <div key={eff.id} className="absolute inset-0 flex items-center justify-center">
+        {myEffects.map((eff) => (
+          <div
+            key={eff.id}
+            className="absolute inset-0 flex items-center justify-center"
+          >
             {[...Array(8)].map((_, i) => (
               <motion.div
                 key={i}
                 initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
                 animate={{
                   scale: [0, 1.5, 0],
-                  x: Math.cos(i * 45 * Math.PI / 180) * 60 + (Math.random() - 0.5) * 20,
-                  y: Math.sin(i * 45 * Math.PI / 180) * 60 + (Math.random() - 0.5) * 20,
-                  opacity: [1, 1, 0]
+                  x:
+                    Math.cos((i * 45 * Math.PI) / 180) * 60 +
+                    (Math.random() - 0.5) * 20,
+                  y:
+                    Math.sin((i * 45 * Math.PI) / 180) * 60 +
+                    (Math.random() - 0.5) * 20,
+                  opacity: [1, 1, 0],
                 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="absolute w-2 h-2 bg-white rounded-full"
                 style={{
-                  boxShadow: '0 0 12px rgba(255,255,255,0.9)',
-                  filter: 'blur(0.5px)'
+                  boxShadow: "0 0 12px rgba(255,255,255,0.9)",
+                  filter: "blur(0.5px)",
                 }}
               />
             ))}
@@ -137,21 +177,27 @@ export default function RoomPage() {
 
   const { addToast } = useToast();
 
-  const [skipInfo, setSkipInfo] = useState<{ streamId: string | null, votes: string[], threshold: number }>({
+  const [skipInfo, setSkipInfo] = useState<{
+    streamId: string | null;
+    votes: string[];
+    threshold: number;
+  }>({
     streamId: null,
     votes: [],
-    threshold: 0
+    threshold: 0,
   });
   const [isVotingToSkip, setIsVotingToSkip] = useState(false);
-  const [recommendedVideos, setRecommendedVideos] = useState<YouTubeVideo[]>([]);
+  const [recommendedVideos, setRecommendedVideos] = useState<YouTubeVideo[]>(
+    [],
+  );
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
-  const [activeTab, setActiveTab] = useState<'queue' | 'suggestions'>('queue');
+  const [activeTab, setActiveTab] = useState<"queue" | "suggestions">("queue");
 
   // Cache for recommendations to avoid redundant API calls
   const recommendationsCache = useRef<Map<string, YouTubeVideo[]>>(new Map());
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<YouTubeVideo[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -161,13 +207,22 @@ export default function RoomPage() {
   const [playerReady, setPlayerReady] = useState(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
 
-  const lastSyncRef = useRef<{ time: number; timestamp: number; isPlaying: boolean } | null>(null);
+  const lastSyncRef = useRef<{
+    time: number;
+    timestamp: number;
+    isPlaying: boolean;
+  } | null>(null);
   const isSyncingRef = useRef(false);
   const lastUpdateTimeRef = useRef<number>(0);
   const clockOffsetRef = useRef(0);
 
   // Store latest playback data from Ably messages to avoid stale state
-  const latestPlaybackDataRef = useRef<{ playbackTime: number; isPlaying: boolean; timestamp: number; serverTimestamp?: number } | null>(null);
+  const latestPlaybackDataRef = useRef<{
+    playbackTime: number;
+    isPlaying: boolean;
+    timestamp: number;
+    serverTimestamp?: number;
+  } | null>(null);
 
   // Refs for real-time state access in event handlers
   const isRoomCreatorRef = useRef(false);
@@ -175,20 +230,30 @@ export default function RoomPage() {
   const updatePlaybackStateRef = useRef<any>(null);
 
   // Presence state for migration logic
-  const [presentMemberIds, setPresentMemberIds] = useState<Set<string>>(new Set());
-  const [upvoteEffects, setUpvoteEffects] = useState<{ id: string; streamId: string }[]>([]);
+  const [presentMemberIds, setPresentMemberIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [upvoteEffects, setUpvoteEffects] = useState<
+    { id: string; streamId: string }[]
+  >([]);
 
   const triggerUpvoteEffect = (streamId: string) => {
     const id = Math.random().toString(36).substr(2, 9);
-    setUpvoteEffects(prev => [...prev, { id, streamId }]);
+    setUpvoteEffects((prev) => [...prev, { id, streamId }]);
     setTimeout(() => {
-      setUpvoteEffects(prev => prev.filter(eff => eff.id !== id));
+      setUpvoteEffects((prev) => prev.filter((eff) => eff.id !== id));
     }, 1000);
   };
 
   // Determine if user is creator or member
-  const isRoomCreator = useMemo(() => room?.creator.id === userId, [room?.creator.id, userId]);
-  const isRoomMember = useMemo(() => room?.members.some((m) => m.userId === userId) || false, [room?.members, userId]);
+  const isRoomCreator = useMemo(
+    () => room?.creator.id === userId,
+    [room?.creator.id, userId],
+  );
+  const isRoomMember = useMemo(
+    () => room?.members.some((m) => m.userId === userId) || false,
+    [room?.members, userId],
+  );
   const [isAutoHealing, setIsAutoHealing] = useState(false);
   const syncEscalationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -203,10 +268,10 @@ export default function RoomPage() {
 
     // Eagerly load the YouTube API as soon as we have a roomId
     // This happens in parallel with room/user data fetching
-    import('@/src/lib/youtube/youtube-api.utils').then(module => {
-      console.log('[Player] Eagerly pre-loading YouTube API...');
-      module.loadYouTubeAPI().catch(err => {
-        console.warn('[Player] Eager pre-load failed (will retry):', err);
+    import("@/src/lib/youtube/youtube-api.utils").then((module) => {
+      console.log("[Player] Eagerly pre-loading YouTube API...");
+      module.loadYouTubeAPI().catch((err) => {
+        console.warn("[Player] Eager pre-load failed (will retry):", err);
       });
     });
   }, [roomId]);
@@ -219,18 +284,23 @@ export default function RoomPage() {
     let mounted = true;
 
     const initPlayer = async () => {
-      console.log('[Player] Initializing for video:', room.currentStream!.stream.extractedId);
+      console.log(
+        "[Player] Initializing for video:",
+        room.currentStream!.stream.extractedId,
+      );
       try {
-        const YT = await (await import('@/src/lib/youtube/youtube-api.utils')).loadYouTubeAPI();
+        const YT = await (
+          await import("@/src/lib/youtube/youtube-api.utils")
+        ).loadYouTubeAPI();
 
         if (!mounted) {
-          console.log('[Player] Component unmounted before API loaded');
+          console.log("[Player] Component unmounted before API loaded");
           return;
         }
 
-        console.log('[Player] API loaded, creating YT.Player...');
+        console.log("[Player] API loaded, creating YT.Player...");
         // Create player
-        player = new YT.Player('youtube-player', {
+        player = new YT.Player("youtube-player", {
           videoId: room.currentStream!.stream.extractedId,
           playerVars: {
             autoplay: 1, // Auto-play when stream changes
@@ -243,41 +313,50 @@ export default function RoomPage() {
           },
           events: {
             onReady: (event) => {
-              console.log('[Player] onReady fired');
+              console.log("[Player] YouTube player ready");
               if (!mounted) return;
               const targetPlayer = event.target;
               playerRef.current = targetPlayer;
               setPlayerReady(true);
-              setPlayerError(null);
+              setPlayerError(null); // Clear any previous errors when player is ready
 
               // IMMEDIATE SYNC: If we already have playback data from fetchRoom, use it immediately
               // This bypasses waiting for the first Ably broadcast
-              if (!isRoomCreatorRef.current && room?.playbackTime !== undefined) {
-                const playbackTime = room.playbackTime || 0;
+              if (
+                !isRoomCreatorRef.current &&
+                room?.playbackTime !== undefined &&
+                room?.isPlaying !== undefined
+              ) {
+                const now = Date.now();
+                const timeDiff = (now - lastUpdateTimeRef.current) / 1000;
+                const targetTime = (room.playbackTime || 0) + timeDiff;
                 const isPlaying = room.isPlaying;
-                console.log('[Sync] Immediate sync from initial room snapshot:', { playbackTime, isPlaying });
-
-                if (playbackTime > 0) {
-                  targetPlayer.seekTo(playbackTime, true);
-                }
-
-                if (isPlaying) {
-                  targetPlayer.playVideo();
-                } else {
-                  targetPlayer.pauseVideo();
-                }
-
-                // Update room state to reflect the sync
-                setRoom(prev => prev ? ({ ...prev, playbackTime, isPlaying }) : null);
-                roomIsPlayingRef.current = isPlaying;
+                console.log(
+                  "[Member] Immediate sync on ready - target time:",
+                  targetTime,
+                );
+                event.target.seekTo(targetTime, true);
+                event.target.playVideo();
+                // Update room state to reflect sync
+                setRoom((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        playbackTime: room.playbackTime || 0,
+                        isPlaying: room.isPlaying || false,
+                      }
+                    : null,
+                );
+                roomIsPlayingRef.current = room.isPlaying || false;
               }
             },
             onStateChange: (event) => {
               if (!mounted) return;
 
               // Auto-play next video when current one ends
-              if (event.data === 0) { // VT.PlayerState.ENDED is 0
-                console.log('Video ended, attempting to play next...');
+              if (event.data === 0) {
+                // VT.PlayerState.ENDED is 0
+                console.log("Video ended, attempting to play next...");
                 if (playNextStreamRef.current) {
                   playNextStreamRef.current();
                 }
@@ -290,29 +369,80 @@ export default function RoomPage() {
 
                 if ((isPlaying || isPaused) && updatePlaybackStateRef.current) {
                   const currentTime = event.target.getCurrentTime();
-                  console.log(`[Creator] State changed to ${isPlaying ? 'PLAYING' : 'PAUSED'}, broadcasting...`);
+                  console.log(
+                    `[Creator] State changed to ${isPlaying ? "PLAYING" : "PAUSED"}, broadcasting...`,
+                  );
                   updatePlaybackStateRef.current(currentTime, isPlaying, true);
                 }
               } else {
                 // Member protection: Aggressively revert manual playback attempts
-                if (event.data === PlayerState.PLAYING && !roomIsPlayingRef.current) {
-                  console.log('[Member] Host is paused, reverting manual play...');
+                if (
+                  event.data === PlayerState.PLAYING &&
+                  !roomIsPlayingRef.current
+                ) {
+                  console.log(
+                    "[Member] Host is paused, reverting manual play...",
+                  );
                   event.target.pauseVideo();
-                  addToast('The host has paused the video', 'info');
-                } else if (event.data === PlayerState.PAUSED && roomIsPlayingRef.current) {
-                  console.log('[Member] Host is playing, reverting manual pause...');
+                  addToast("The host has paused the video", "info");
+                } else if (
+                  event.data === PlayerState.PAUSED &&
+                  roomIsPlayingRef.current
+                ) {
+                  console.log(
+                    "[Member] Host is playing, reverting manual pause...",
+                  );
                   event.target.playVideo();
-                  addToast('The host is currently playing the video', 'info');
+                  addToast("The host is currently playing the video", "info");
                 }
               }
             },
             onError: (event) => {
-              console.error('[Player] onError fired:', event.data);
+              console.error("[Player] onError fired:", event.data);
               if (!mounted) return;
-              const errorMsg = `Player error: ${event.data}`;
-              setPlayerError(errorMsg);
-            }
-          }
+
+              // Handle specific YouTube error codes
+              const errorCode = event.data;
+              let errorMessage = "Video playback error";
+              let shouldSkip = false;
+
+              switch (errorCode) {
+                case 2:
+                  errorMessage = "Invalid video ID or parameters";
+                  break;
+                case 5:
+                  errorMessage =
+                    "Video content is not playable in HTML5 player";
+                  shouldSkip = true;
+                  break;
+                case 100:
+                  errorMessage = "Video not found or removed";
+                  shouldSkip = true;
+                  break;
+                case 101:
+                case 150:
+                  errorMessage =
+                    "Video playback blocked by owner or copyright restrictions";
+                  shouldSkip = true;
+                  break;
+                default:
+                  errorMessage = `Player error: ${errorCode}`;
+              }
+
+              setPlayerError(errorMessage);
+
+              // Show user-friendly toast message
+              addToast(errorMessage, "error");
+
+              // If this is a skippable error and we're the creator, try to skip to next video
+              if (shouldSkip && isRoomCreator && room?.streams.length > 1) {
+                console.log("[Player] Attempting to skip unplayable video");
+                setTimeout(() => {
+                  playNextStream();
+                }, 2000);
+              }
+            },
+          },
         });
       } catch (error) {
         if (!mounted) return;
@@ -329,7 +459,7 @@ export default function RoomPage() {
         try {
           player.destroy();
         } catch (err) {
-          console.error('Error destroying player:', err);
+          console.error("Error destroying player:", err);
         }
       }
       playerRef.current = null;
@@ -338,23 +468,33 @@ export default function RoomPage() {
   }, [room?.currentStream?.stream.extractedId, isRoomCreator]);
 
   // Ref for handlePlayStream to avoid circular dependency
-  const handlePlayStreamRef = useRef<((streamId: string) => Promise<void>) | null>(null);
+  const handlePlayStreamRef = useRef<
+    ((streamId: string) => Promise<void>) | null
+  >(null);
 
   // Ably real-time hook
-  const { isConnected, publishPlaybackUpdate, publishStreamChange, publishReaction, publishSkipUpdate } = useRoomAbly({
+  const {
+    isConnected,
+    publishPlaybackUpdate,
+    publishStreamChange,
+    publishReaction,
+    publishSkipUpdate,
+  } = useRoomAbly({
     roomId,
     userId: userId,
-    userInfo: session?.user ? {
-      name: session.user.name || 'Anonymous',
-      image: session.user.image || null,
-    } : undefined,
+    userInfo: session?.user
+      ? {
+          name: session.user.name || "Anonymous",
+          image: session.user.image || null,
+        }
+      : undefined,
     isCreator: isRoomCreator || false,
     onPresenceUpdate: (update) => {
-      setPresentMemberIds(prev => {
+      setPresentMemberIds((prev) => {
         const next = new Set(prev);
-        if (update.action === 'enter' || update.action === 'update') {
+        if (update.action === "enter" || update.action === "update") {
           next.add(update.clientId);
-        } else if (update.action === 'leave') {
+        } else if (update.action === "leave") {
           next.delete(update.clientId);
         }
         return next;
@@ -364,38 +504,39 @@ export default function RoomPage() {
       setSkipInfo(data);
     },
     onMemberJoined: (data) => {
-      console.log('Member joined:', data);
-      addToast(`${data.user.email || 'A user'} joined the room`, 'success');
+      console.log("Member joined:", data);
+      addToast(`${data.user.email || "A user"} joined the room`, "success");
       fetchRoom();
     },
     onMemberLeft: (data) => {
-      console.log('Member left:', data);
+      console.log("Member left:", data);
       // Refresh room to update member list
       fetchRoom();
 
       // Show notification
       if (data.isCreator) {
-        addToast('The room creator has left', 'info');
+        addToast("The room creator has left", "info");
       }
     },
     onCreatorTransferred: (data) => {
-      console.log('Creator transferred:', data);
-      addToast(`${data.newCreator.email} is now the room creator`, 'info');
+      console.log("Creator transferred:", data);
+      addToast(`${data.newCreator.email} is now the room creator`, "info");
 
       // Refresh room to update creator and member roles
       fetchRoom();
     },
     onRoomEnded: (data) => {
-      console.log('Room ended:', data);
-      const reason = data.reason === 'creator_left_alone'
-        ? 'The creator left the room'
-        : 'All members have left';
+      console.log("Room ended:", data);
+      const reason =
+        data.reason === "creator_left_alone"
+          ? "The creator left the room"
+          : "All members have left";
 
-      addToast(`Room ended: ${reason}`, 'error');
+      addToast(`Room ended: ${reason}`, "error");
 
       // Navigate back to dashboard after a brief delay
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push("/dashboard");
       }, 2000);
     },
     /* onReaction: (data) => {
@@ -420,23 +561,22 @@ export default function RoomPage() {
           try {
             actualTime = player.getCurrentTime();
           } catch (err) {
-            console.warn('[Sync] Could not get current time:', err);
+            console.warn("[Sync] Could not get current time:", err);
             actualTime = latestPlaybackDataRef.current?.playbackTime || 0;
           }
 
           // Account for network latency
           const latency = data.serverTimestamp ? now - data.serverTimestamp : 0;
           const targetTime = data.isPlaying
-            ? data.playbackTime + (latency / 1000)
+            ? data.playbackTime + latency / 1000
             : data.playbackTime;
 
           const drift = Math.abs(actualTime - targetTime);
 
-
           // Adaptive sync based on drift
           if (drift > SYNC_THRESHOLDS.HARD_SYNC) {
             // Large drift: immediate seek
-            console.log('[Sync] Hard sync - seeking to:', targetTime);
+            console.log("[Sync] Hard sync - seeking to:", targetTime);
             player.seekTo(targetTime, true);
           } else if (drift > SYNC_THRESHOLDS.SOFT_SYNC) {
             const currentState = player.getPlayerState();
@@ -445,7 +585,10 @@ export default function RoomPage() {
             if (!isCurrentlyPlaying) {
               // During pause: ONLY seek if drift is significant (avoid jitter loops)
               if (drift > 0.5) {
-                console.log('[Sync] Soft sync (paused) - seeking to:', targetTime);
+                console.log(
+                  "[Sync] Soft sync (paused) - seeking to:",
+                  targetTime,
+                );
                 player.seekTo(targetTime, true);
               }
             } else {
@@ -470,7 +613,9 @@ export default function RoomPage() {
               }
 
               if (rate !== 1.0) {
-                console.log(`[Sync] Predictive Correction: ${isBehind ? 'BEHIND' : 'AHEAD'} by ${drift.toFixed(3)}s -> Rate: ${rate}x`);
+                console.log(
+                  `[Sync] Predictive Correction: ${isBehind ? "BEHIND" : "AHEAD"} by ${drift.toFixed(3)}s -> Rate: ${rate}x`,
+                );
                 player.setPlaybackRate(rate);
 
                 // Maintain rate based on severity (longer for larger drifts)
@@ -488,14 +633,18 @@ export default function RoomPage() {
             const isBehind = actualTime < targetTime;
             const rate = isBehind ? 1.01 : 0.99;
             player.setPlaybackRate(rate);
-            setTimeout(() => { if (playerRef.current) playerRef.current.setPlaybackRate(1.0); }, 500);
+            setTimeout(() => {
+              if (playerRef.current) playerRef.current.setPlaybackRate(1.0);
+            }, 500);
           }
 
           // Drift Escalation: If we have drift for too long despite rate adjustments, force a seek
           if (drift > 0.5) {
             if (!syncEscalationTimerRef.current) {
               syncEscalationTimerRef.current = setTimeout(() => {
-                console.log('[Sync] Drift not resolved via rate adjustments. Escalating to Hard Sync.');
+                console.log(
+                  "[Sync] Drift not resolved via rate adjustments. Escalating to Hard Sync.",
+                );
                 player.seekTo(targetTime, true);
                 syncEscalationTimerRef.current = null;
               }, 4000); // Wait 4s for rate adjustment to work
@@ -507,11 +656,15 @@ export default function RoomPage() {
 
           // Sync play/pause state
           const currentState = player.getPlayerState();
-          if (data.isPlaying && currentState !== PlayerState.PLAYING && currentState !== PlayerState.BUFFERING) {
-            console.log('[Sync] Playing video');
+          if (
+            data.isPlaying &&
+            currentState !== PlayerState.PLAYING &&
+            currentState !== PlayerState.BUFFERING
+          ) {
+            console.log("[Sync] Playing video");
             player.playVideo();
           } else if (!data.isPlaying && currentState === PlayerState.PLAYING) {
-            console.log('[Sync] Pausing video');
+            console.log("[Sync] Pausing video");
             player.pauseVideo();
           }
 
@@ -520,37 +673,43 @@ export default function RoomPage() {
             playbackTime: data.playbackTime,
             isPlaying: data.isPlaying,
             timestamp: now,
-            serverTimestamp: data.serverTimestamp
+            serverTimestamp: data.serverTimestamp,
           };
 
           // Update refs and room state
           roomIsPlayingRef.current = data.isPlaying;
 
           if (room) {
-            setRoom(prev => prev ? ({
-              ...prev,
-              playbackTime: data.playbackTime,
-              isPlaying: data.isPlaying,
-            }) : null);
+            setRoom((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    playbackTime: data.playbackTime,
+                    isPlaying: data.isPlaying,
+                  }
+                : null,
+            );
           }
         } catch (error) {
-          console.error('[Sync] Error handling playback update:', error);
+          console.error("[Sync] Error handling playback update:", error);
         }
       } else {
         const reason = [];
-        if (isRoomCreator) reason.push('isCreator');
-        if (!playerRef.current) reason.push('noPlayerRef');
-        if (!playerReady) reason.push('playerNotReady');
-
+        if (isRoomCreator) reason.push("isCreator");
+        if (!playerRef.current) reason.push("noPlayerRef");
+        if (!playerReady) reason.push("playerNotReady");
       }
     },
     onStreamChange: (streamId) => {
+      // Store the old current stream ID before updating
+      const oldCurrentStreamId = room?.currentStream?.id;
+
       // Find the stream in our current data
       // Use functional update to access latest state without dependency
-      setRoom(prev => {
+      setRoom((prev) => {
         if (!prev) return null;
 
-        const nextStream = prev.streams.find(s => s.streamId === streamId);
+        const nextStream = prev.streams.find((s) => s.streamId === streamId);
 
         // Optimistic update: Switch immediately without waiting for API
         if (nextStream) {
@@ -558,15 +717,15 @@ export default function RoomPage() {
             ...prev,
             currentStream: {
               id: nextStream.id,
-              stream: nextStream.stream
-            }
+              stream: nextStream.stream,
+            },
           };
         }
         return prev;
       });
 
       // Clear user's upvote for this stream immediately (Optimistic Rave logic)
-      setUpvotedStreams(prev => {
+      setUpvotedStreams((prev) => {
         if (!prev.has(streamId)) return prev;
         const next = new Set(prev);
         next.delete(streamId);
@@ -574,24 +733,27 @@ export default function RoomPage() {
       });
 
       // Update room state to reset votes for this stream (Optimistic)
-      setRoom(prev => {
+      setRoom((prev) => {
         if (!prev) return null;
 
         // Reset votes for the playing stream
-        const updatedStreams = prev.streams.map(s => {
+        const updatedStreams = prev.streams.map((s) => {
           if (s.streamId === streamId) {
             return {
               ...s,
               upvoteCount: 0,
-              upvotes: []
+              upvotes: [],
             };
           }
           return s;
         });
 
+        // Note: Don't filter out old stream here since handlePlayStream already does it
+        // This prevents race conditions and brief re-appearance
+
         return {
           ...prev,
-          streams: updatedStreams
+          streams: updatedStreams,
         };
       });
 
@@ -604,59 +766,43 @@ export default function RoomPage() {
   });
 
   // Migration logic: Trigger host takeover if creator is gone
-  const shouldTrigerMigration = useMemo(() => {
-    if (!room || !userId || isRoomCreator || !isConnected) return false;
-
-    // 1. Is the creator present?
-    const isCreatorPresent = presentMemberIds.has(room.creator.id);
-    if (isCreatorPresent) return false;
-
-    // 2. Am I the oldest member CURRENTLY present?
-    const activeMembers = room.members
-      .filter(m => presentMemberIds.has(m.userId))
-      .sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
-
-    const oldestActiveUserId = activeMembers[0]?.userId;
-    return oldestActiveUserId === userId;
-  }, [room, userId, presentMemberIds, isRoomCreator, isConnected]);
-
   useEffect(() => {
-    if (shouldTrigerMigration && roomId) {
+    if (roomId) {
       const migrateTimeout = setTimeout(async () => {
-        console.log('[Migration] Creator missing. Triggering takeover...');
+        console.log("[Migration] Creator missing. Triggering takeover...");
         try {
-          const res = await fetch(`/api/rooms/${roomId}/migrate`, { method: 'POST' });
+          const res = await fetch(`/api/rooms/${roomId}/migrate`, {
+            method: "POST",
+            credentials: "include",
+          });
           if (res.ok) {
-            console.log('[Migration] Successfully claimed creator role');
-            addToast('You are now the room host', 'success');
+            console.log("[Migration] Successfully claimed creator role");
+            addToast("You are now the room host", "success");
           }
         } catch (err) {
-          console.error('[Migration] Failed to migrate:', err);
+          console.error("[Migration] Failed to migrate:", err);
         }
       }, 5000); // 5s debounce to allow for reconnects
 
       return () => clearTimeout(migrateTimeout);
     }
-  }, [shouldTrigerMigration, roomId, addToast]);
-
-
-
+  }, [roomId]);
 
   // Fetch room function (defined early for use in useEffects)
   const fetchRoom = useCallback(async () => {
     if (!roomId) return;
     try {
       const response = await fetch(`/api/rooms/${roomId}`, {
-        credentials: 'include',
+        credentials: "include",
       });
       if (!response.ok) {
         if (response.status === 404) {
-          console.error('Room not found, redirecting to dashboard');
+          console.error("Room not found, redirecting to dashboard");
           setRoom(null); // Clear room state to stop sync loops
-          setError('Room not found');
-          router.push('/dashboard');
+          setError("Room not found");
+          router.push("/dashboard");
         } else {
-          throw new Error('Failed to fetch room');
+          throw new Error("Failed to fetch room");
         }
         return;
       }
@@ -665,9 +811,9 @@ export default function RoomPage() {
       setRoom(data);
       setError(null);
     } catch (error) {
-      console.error('Error fetching room:', error);
+      console.error("Error fetching room:", error);
       if (!room) {
-        setError('Failed to load room. Please try again.');
+        setError("Failed to load room. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -711,15 +857,19 @@ export default function RoomPage() {
     const snapshot = latestPlaybackDataRef.current || {
       playbackTime: room.playbackTime || 0,
       isPlaying: room.isPlaying,
-      serverTimestamp: room.lastSyncTime ? new Date(room.lastSyncTime).getTime() : now
+      serverTimestamp: room.lastSyncTime
+        ? new Date(room.lastSyncTime).getTime()
+        : now,
     };
 
-    const latency = snapshot.serverTimestamp ? (now + (clockOffsetRef.current || 0)) - snapshot.serverTimestamp : 0;
+    const latency = snapshot.serverTimestamp
+      ? now + (clockOffsetRef.current || 0) - snapshot.serverTimestamp
+      : 0;
     const targetTime = snapshot.isPlaying
-      ? snapshot.playbackTime + (latency / 1000)
+      ? snapshot.playbackTime + latency / 1000
       : snapshot.playbackTime;
 
-    console.log('[Sync] Force re-syncing to:', targetTime);
+    console.log("[Sync] Force re-syncing to:", targetTime);
     playerRef.current.seekTo(targetTime, true);
     if (snapshot.isPlaying) {
       playerRef.current.playVideo();
@@ -728,19 +878,27 @@ export default function RoomPage() {
     }
 
     setTimeout(() => setIsAutoHealing(false), 2000);
-    addToast('Synchronizing with host...', 'info');
+    addToast("Synchronizing with host...", "info");
   }, [room, playerReady, isConnected]);
 
   // Watchdog Timer for player stalls
   useEffect(() => {
-    if (!room?.isPlaying || !playerReady || !playerRef.current || isRoomCreator) return;
+    if (!room?.isPlaying || !playerReady || !playerRef.current || isRoomCreator)
+      return;
 
     const checkStall = () => {
       const state = playerRef.current?.getPlayerState();
       // If host is playing but we are stuck/paused for too long
       // Only trigger if we aren't already trying to sync
-      if ((state === PlayerState.BUFFERING || state === PlayerState.PAUSED || state === -1) && room.isPlaying) {
-        console.log('[Watchdog] Player stalled while host is playing. Triggering auto-heal...');
+      if (
+        (state === PlayerState.BUFFERING ||
+          state === PlayerState.PAUSED ||
+          state === -1) &&
+        room.isPlaying
+      ) {
+        console.log(
+          "[Watchdog] Player stalled while host is playing. Triggering auto-heal...",
+        );
         forceSyncWithHost();
       }
     };
@@ -756,10 +914,10 @@ export default function RoomPage() {
 
     const initData = async () => {
       try {
-        console.log('[Room] Concurrent data fetch starting...');
+        console.log("[Room] Concurrent data fetch starting...");
         const [roomRes, userRes] = await Promise.all([
-          fetch(`/api/rooms/${roomId}`, { credentials: 'include' }),
-          fetch('/api/user', { credentials: 'include' })
+          fetch(`/api/rooms/${roomId}`, { credentials: "include" }),
+          fetch("/api/user", { credentials: "include" }),
         ]);
 
         if (roomRes.ok) {
@@ -767,7 +925,7 @@ export default function RoomPage() {
           setRoom(roomData);
           setError(null);
         } else if (roomRes.status === 404) {
-          router.push('/dashboard');
+          router.push("/dashboard");
           return;
         }
 
@@ -776,8 +934,8 @@ export default function RoomPage() {
           setUserId(userData.id);
         }
       } catch (err) {
-        console.error('[Room] Initialization error:', err);
-        setError('Failed to load room data');
+        console.error("[Room] Initialization error:", err);
+        setError("Failed to load room data");
       } finally {
         setLoading(false);
       }
@@ -803,14 +961,22 @@ export default function RoomPage() {
     }
 
     // Sort streams by upvote count and select the most upvoted one
-    const sortedStreams = [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount);
+    const sortedStreams = [...room.streams].sort(
+      (a, b) => b.upvoteCount - a.upvoteCount,
+    );
     const mostUpvotedStream = sortedStreams[0];
     if (mostUpvotedStream && handlePlayStreamRef.current) {
       // streamId in RoomStream is the Stream.id, which is what handlePlayStream expects
       handlePlayStreamRef.current(mostUpvotedStream.streamId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room?.id, room?.currentStream?.id, room?.streams?.length, userId, room?.members]);
+  }, [
+    room?.id,
+    room?.currentStream?.id,
+    room?.streams?.length,
+    userId,
+    room?.members,
+  ]);
 
   // Track upvoted streams
   useEffect(() => {
@@ -833,7 +999,7 @@ export default function RoomPage() {
       setSkipInfo({
         streamId: currentStreamId,
         votes: [],
-        threshold: 0
+        threshold: 0,
       });
     }
   }, [room?.currentStream?.id, skipInfo.streamId]);
@@ -856,7 +1022,9 @@ export default function RoomPage() {
     const fetchRecommended = async () => {
       try {
         setIsLoadingRecommended(true);
-        const response = await fetch(`/api/youtube/related?videoId=${currentVideoId}`);
+        const response = await fetch(
+          `/api/youtube/related?videoId=${currentVideoId}`,
+        );
         if (response.ok) {
           const data = await response.json();
           const result = data.data || data;
@@ -867,7 +1035,7 @@ export default function RoomPage() {
           setRecommendedVideos(videos);
         }
       } catch (error) {
-        console.error('Error fetching recommended videos:', error);
+        console.error("Error fetching recommended videos:", error);
       } finally {
         setIsLoadingRecommended(false);
       }
@@ -878,20 +1046,30 @@ export default function RoomPage() {
     // Prefetch suggestions for the next video in queue (if exists)
     // This makes switching to the next video feel instant
     if (room?.streams && room.streams.length > 0) {
-      const sortedStreams = [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount);
-      const currentIndex = sortedStreams.findIndex(s => s.stream.extractedId === currentVideoId);
+      const sortedStreams = [...room.streams].sort(
+        (a, b) => b.upvoteCount - a.upvoteCount,
+      );
+      const currentIndex = sortedStreams.findIndex(
+        (s) => s.stream.extractedId === currentVideoId,
+      );
       const nextStream = sortedStreams[currentIndex + 1];
 
-      if (nextStream && !recommendationsCache.current.has(nextStream.stream.extractedId)) {
+      if (
+        nextStream &&
+        !recommendationsCache.current.has(nextStream.stream.extractedId)
+      ) {
         // Prefetch in background (don't await)
         fetch(`/api/youtube/related?videoId=${nextStream.stream.extractedId}`)
-          .then(res => res.json())
-          .then(data => {
+          .then((res) => res.json())
+          .then((data) => {
             const result = data.data || data;
             const videos = result.videos || [];
-            recommendationsCache.current.set(nextStream.stream.extractedId, videos);
+            recommendationsCache.current.set(
+              nextStream.stream.extractedId,
+              videos,
+            );
           })
-          .catch(err => console.log('Prefetch failed:', err));
+          .catch((err) => console.log("Prefetch failed:", err));
       }
     }
   }, [room?.currentStream?.stream.extractedId, room?.streams]);
@@ -902,25 +1080,31 @@ export default function RoomPage() {
 
     // 1. Get all streams that have votes and are not currently playing
     const votedStreams = (room.streams || [])
-      .filter(s =>
-        s.upvoteCount > 0 &&
-        s.stream.extractedId !== room.currentStream?.stream.extractedId
+      .filter(
+        (s) =>
+          s.upvoteCount > 0 &&
+          s.stream.extractedId !== room.currentStream?.stream.extractedId,
       )
-      .map(s => ({
+      .map((s) => ({
         id: s.stream.extractedId,
         title: s.stream.title,
-        thumbnail: s.stream.smallImg || `https://i.ytimg.com/vi/${s.stream.extractedId}/mqdefault.jpg`,
-        channelTitle: 'Trending in Room', // Generic label instead of adder's email
-        upvoteCount: s.upvoteCount
+        thumbnail:
+          s.stream.smallImg ||
+          `https://i.ytimg.com/vi/${s.stream.extractedId}/mqdefault.jpg`,
+        channelTitle: "Trending in Room", // Generic label instead of adder's email
+        upvoteCount: s.upvoteCount,
       }));
 
     // 2. Map recommended videos to include their upvoteCount if they exist in room streams
-    const recommendationsWithVotes = recommendedVideos.map(video => {
-      const existingStream = room.streams.find(s => s.stream.extractedId === video.id);
+    const recommendationsWithVotes = recommendedVideos.map((video) => {
+      const existingStream = room.streams.find(
+        (s) => s.stream.extractedId === video.id,
+      );
       return {
         ...video,
-        thumbnail: video.thumbnail || `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`,
-        upvoteCount: existingStream?.upvoteCount || 0
+        thumbnail:
+          video.thumbnail || `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`,
+        upvoteCount: existingStream?.upvoteCount || 0,
       };
     });
 
@@ -928,10 +1112,10 @@ export default function RoomPage() {
     const uniqueMap = new Map();
 
     // Add recommendations first (rich metadata)
-    recommendationsWithVotes.forEach(v => uniqueMap.set(v.id, v));
+    recommendationsWithVotes.forEach((v) => uniqueMap.set(v.id, v));
 
     // Add/Merge voted streams from the queue
-    votedStreams.forEach(v => {
+    votedStreams.forEach((v) => {
       if (!uniqueMap.has(v.id)) {
         uniqueMap.set(v.id, v);
       } else {
@@ -945,9 +1129,13 @@ export default function RoomPage() {
 
     // 4. Return sorted list (voted first, then by vote count)
     return Array.from(uniqueMap.values())
-      .filter(v => v.id !== room.currentStream?.stream.extractedId)
+      .filter((v) => v.id !== room.currentStream?.stream.extractedId)
       .sort((a, b) => (b.upvoteCount || 0) - (a.upvoteCount || 0));
-  }, [recommendedVideos, room?.streams, room?.currentStream?.stream.extractedId]);
+  }, [
+    recommendedVideos,
+    room?.streams,
+    room?.currentStream?.stream.extractedId,
+  ]);
 
   // Handle search
   const handleSearch = useCallback(async (query: string) => {
@@ -958,7 +1146,9 @@ export default function RoomPage() {
 
     try {
       setIsSearching(true);
-      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(
+        `/api/youtube/search?q=${encodeURIComponent(query)}`,
+      );
       if (response.ok) {
         const data = await response.json();
         // Handle both wrapped { data: { videos: [] } } and direct { videos: [] } formats
@@ -966,7 +1156,7 @@ export default function RoomPage() {
         setSearchResults(result.videos || []);
       }
     } catch (error) {
-      console.error('Error searching videos:', error);
+      console.error("Error searching videos:", error);
     } finally {
       setIsSearching(false);
     }
@@ -993,10 +1183,12 @@ export default function RoomPage() {
     };
   }, [searchQuery, handleSearch]);
 
-
-
   // Update playback state (creator only) - no debouncing when playing for ultra-tight sync
-  const updatePlaybackState = async (playbackTime: number, isPlaying: boolean, immediate = false) => {
+  const updatePlaybackState = async (
+    playbackTime: number,
+    isPlaying: boolean,
+    immediate = false,
+  ) => {
     const isRoomCreatorCheck = room?.creator.id === userId;
 
     if (!roomId || !isRoomCreatorCheck) {
@@ -1010,8 +1202,10 @@ export default function RoomPage() {
     // - Immediate if requested (manual play/pause/seek)
     // - CREATOR_BROADCAST interval if playing (2s)
     // - 1s if paused
-    const throttleInterval = isPlaying ? SYNC_INTERVALS.CREATOR_BROADCAST : 1000;
-    if (!immediate && (now - lastUpdateTimeRef.current) < throttleInterval) {
+    const throttleInterval = isPlaying
+      ? SYNC_INTERVALS.CREATOR_BROADCAST
+      : 1000;
+    if (!immediate && now - lastUpdateTimeRef.current < throttleInterval) {
       return;
     }
     lastUpdateTimeRef.current = now;
@@ -1022,21 +1216,27 @@ export default function RoomPage() {
     // Update DB in parallel (don't block on it)
     try {
       fetch(`/api/rooms/${roomId}/playback`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ playbackTime, isPlaying }),
-      }).then((response) => {
-        if (!response.ok) {
-          console.error('Failed to update playback state in DB');
-        } else {
-          lastSyncRef.current = { time: playbackTime, timestamp: Date.now(), isPlaying };
-        }
-      }).catch((error) => {
-        console.error('Error updating playback state in DB:', error);
-      });
+      })
+        .then((response) => {
+          if (!response.ok) {
+            console.error("Failed to update playback state in DB");
+          } else {
+            lastSyncRef.current = {
+              time: playbackTime,
+              timestamp: Date.now(),
+              isPlaying,
+            };
+          }
+        })
+        .catch((error) => {
+          console.error("Error updating playback state in DB:", error);
+        });
     } catch (error) {
-      console.error('Error updating playback state:', error);
+      console.error("Error updating playback state:", error);
     }
   };
 
@@ -1053,13 +1253,19 @@ export default function RoomPage() {
       currentStream: !!room?.currentStream,
       isCreator: isRoomCreator,
       playerReady,
-      hasPlayerRef: !!playerRef.current
+      hasPlayerRef: !!playerRef.current,
     };
 
     if (!roomId) return; // Silent return if no room
 
     // Only log if something important is missing
-    if (!roomId || !room?.currentStream || !isRoomCreator || !playerReady || !playerRef.current) {
+    if (
+      !roomId ||
+      !room?.currentStream ||
+      !isRoomCreator ||
+      !playerReady ||
+      !playerRef.current
+    ) {
       return;
     }
 
@@ -1084,7 +1290,9 @@ export default function RoomPage() {
           let timeDrift = 0;
           if (lastSyncRef.current) {
             const timeSinceSync = (now - lastSyncRef.current.timestamp) / 1000;
-            const projectedTime = lastSyncRef.current.time + (lastSyncRef.current.isPlaying ? timeSinceSync : 0);
+            const projectedTime =
+              lastSyncRef.current.time +
+              (lastSyncRef.current.isPlaying ? timeSinceSync : 0);
             timeDrift = Math.abs(currentTime - projectedTime);
           }
 
@@ -1094,17 +1302,21 @@ export default function RoomPage() {
           const shouldUpdate =
             stateChanged ||
             !lastSyncRef.current ||
-            (timeSinceLastUpdate >= SYNC_INTERVALS.CREATOR_BROADCAST) ||
-            (timeDrift > 1.5); // Broadcast immediately if time jumps significantly (Seek)
+            timeSinceLastUpdate >= SYNC_INTERVALS.CREATOR_BROADCAST ||
+            timeDrift > 1.5; // Broadcast immediately if time jumps significantly (Seek)
 
           if (shouldUpdate) {
             // Force immediate update if state changed
             updatePlaybackState(currentTime, isPlaying, stateChanged);
-            lastSyncRef.current = { time: currentTime, timestamp: now, isPlaying };
+            lastSyncRef.current = {
+              time: currentTime,
+              timestamp: now,
+              isPlaying,
+            };
             lastUpdateTime = now;
           }
         } catch (error) {
-          console.error('[Sync] Error syncing playback state:', error);
+          console.error("[Sync] Error syncing playback state:", error);
         }
       }
 
@@ -1120,21 +1332,27 @@ export default function RoomPage() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [roomId, room?.currentStream?.id, room?.creator.id, userId, publishPlaybackUpdate, isRoomCreator, playerReady]);
-
-
+  }, [
+    roomId,
+    room?.currentStream?.id,
+    room?.creator.id,
+    userId,
+    publishPlaybackUpdate,
+    isRoomCreator,
+    playerReady,
+  ]);
 
   const fetchUserId = async () => {
     try {
-      const response = await fetch('/api/user', {
-        credentials: 'include',
+      const response = await fetch("/api/user", {
+        credentials: "include",
       });
       if (response.ok) {
         const user = await response.json();
         setUserId(user.id);
       }
     } catch (error) {
-      console.error('Error fetching user ID:', error);
+      console.error("Error fetching user ID:", error);
     }
   };
 
@@ -1144,24 +1362,27 @@ export default function RoomPage() {
     try {
       setIsJoining(true);
       const response = await fetch(`/api/rooms/${roomId}/join`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
 
       if (response.ok) {
         fetchRoom();
       } else {
         const data = await response.json();
-        if (data.errorCode === 'ALREADY_MEMBER' || data.error?.includes('already a member')) {
-          console.log('[Room] User already a member, fetching room data...');
+        if (
+          data.errorCode === "ALREADY_MEMBER" ||
+          data.error?.includes("already a member")
+        ) {
+          console.log("[Room] User already a member, fetching room data...");
           fetchRoom();
         } else {
-          setError(data.error || 'Failed to join room');
+          setError(data.error || "Failed to join room");
         }
       }
     } catch (error) {
-      console.error('Error joining room:', error);
-      setError('Failed to join room. Please try again.');
+      console.error("Error joining room:", error);
+      setError("Failed to join room. Please try again.");
     } finally {
       setIsJoining(false);
     }
@@ -1169,7 +1390,14 @@ export default function RoomPage() {
 
   // Auto-join if user is authenticated and not a member
   useEffect(() => {
-    if (room && userId && !isRoomMember && !isRoomCreator && !isJoining && !error) {
+    if (
+      room &&
+      userId &&
+      !isRoomMember &&
+      !isRoomCreator &&
+      !isJoining &&
+      !error
+    ) {
       handleJoin();
     }
   }, [room?.id, userId, isRoomMember, isRoomCreator, isJoining, error]);
@@ -1181,26 +1409,24 @@ export default function RoomPage() {
       setIsLeaving(true);
       setError(null);
       const response = await fetch(`/api/rooms/${roomId}/leave`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
 
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        router.push('/rooms');
+        router.push("/rooms");
       } else {
-        setError(data.error || data.message || 'Failed to leave room');
+        setError(data.error || data.message || "Failed to leave room");
       }
     } catch (error) {
-      console.error('Error leaving room:', error);
-      setError('Failed to leave room. Please try again.');
+      console.error("Error leaving room:", error);
+      setError("Failed to leave room. Please try again.");
     } finally {
       setIsLeaving(false);
     }
   };
-
-
 
   const handleUpvote = async (streamId: string) => {
     if (!userId || !roomId) return;
@@ -1225,19 +1451,21 @@ export default function RoomPage() {
     if (room) {
       setRoom({
         ...room,
-        streams: room.streams.map(s => {
+        streams: room.streams.map((s) => {
           if (s.streamId === streamId) {
             return {
               ...s,
-              upvoteCount: isUpvoted ? Math.max(0, s.upvoteCount - 1) : s.upvoteCount + 1,
+              upvoteCount: isUpvoted
+                ? Math.max(0, s.upvoteCount - 1)
+                : s.upvoteCount + 1,
               // Add/remove current user from upvotes list for avatar display
               upvotes: isUpvoted
-                ? s.upvotes.filter(v => v.userId !== userId)
-                : [...s.upvotes, { id: 'temp', userId }]
+                ? s.upvotes.filter((v) => v.userId !== userId)
+                : [...s.upvotes, { id: "temp", userId }],
             };
           }
           return s;
-        })
+        }),
       });
     }
 
@@ -1248,18 +1476,18 @@ export default function RoomPage() {
         : `/api/rooms/${roomId}/streams/${streamId}/upvote`;
 
       const response = await fetch(endpoint, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error('Failed to upvote');
+        throw new Error("Failed to upvote");
       }
 
       // Re-fetch to ensure server-side consistency, but UI is already correct
       fetchRoom();
     } catch (error) {
-      console.error('Error upvoting:', error);
+      console.error("Error upvoting:", error);
       // Revert on failure
       setRoom(previousRoom);
       setUpvotedStreams(previousUpvoted);
@@ -1268,46 +1496,59 @@ export default function RoomPage() {
     }
   };
 
-  const handlePlayStream = useCallback(async (streamId: string) => {
-    if (!roomId) {
-      return;
-    }
-
-    // Optimistic update: Switch stream immediately in local state
-    setRoom(prev => {
-      if (!prev) return null;
-
-      const targetStream = prev.streams.find(s => s.streamId === streamId);
-
-      if (targetStream) {
-        return {
-          ...prev,
-          currentStream: {
-            id: targetStream.id,
-            stream: targetStream.stream
-          }
-        };
+  const handlePlayStream = useCallback(
+    async (streamId: string) => {
+      if (!roomId) {
+        return;
       }
-      return prev;
-    });
 
-    // Publish stream change via Ably immediately for real-time notification
-    publishStreamChange(streamId);
+      // Optimistic update: Switch stream immediately in local state
+      setRoom((prev) => {
+        if (!prev) return null;
 
-    // Update server in background (don't block UI on this)
-    try {
-      const response = await fetch(`/api/rooms/${roomId}/streams/${streamId}/play`, {
-        method: 'PUT',
-        credentials: 'include',
+        const targetStream = prev.streams.find((s) => s.streamId === streamId);
+        const oldCurrentStreamId = prev.currentStream?.id;
+
+        if (targetStream) {
+          // Remove old current stream from queue immediately to prevent brief re-appearance
+          const filteredStreams = oldCurrentStreamId
+            ? prev.streams.filter((s) => s.id !== oldCurrentStreamId)
+            : prev.streams;
+
+          return {
+            ...prev,
+            currentStream: {
+              id: targetStream.id,
+              stream: targetStream.stream,
+            },
+            streams: filteredStreams,
+          };
+        }
+        return prev;
       });
-      if (response.ok) {
-        // Fetch to ensure consistency, but UI already updated
-        fetchRoom();
+
+      // Publish stream change via Ably immediately for real-time notification
+      publishStreamChange(streamId);
+
+      // Update server in background (don't block UI on this)
+      try {
+        const response = await fetch(
+          `/api/rooms/${roomId}/streams/${streamId}/play`,
+          {
+            method: "PUT",
+            credentials: "include",
+          },
+        );
+        if (response.ok) {
+          // Fetch to ensure consistency, but UI already updated
+          fetchRoom();
+        }
+      } catch (error) {
+        console.error("Error playing stream:", error);
       }
-    } catch (error) {
-      console.error('Error playing stream:', error);
-    }
-  }, [roomId, publishStreamChange, fetchRoom]);
+    },
+    [roomId, publishStreamChange, fetchRoom],
+  );
 
   const handleSkipVote = async () => {
     if (!room?.currentStream || !userId || isVotingToSkip) return;
@@ -1315,10 +1556,13 @@ export default function RoomPage() {
     try {
       setIsVotingToSkip(true);
       const streamId = room.currentStream.stream.id;
-      const response = await fetch(`/api/rooms/${roomId}/streams/${streamId}/skip`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `/api/rooms/${roomId}/streams/${streamId}/skip`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -1328,14 +1572,14 @@ export default function RoomPage() {
         setSkipInfo({
           streamId,
           votes: result.votes,
-          threshold: result.threshold
+          threshold: result.threshold,
         });
 
         // Broadcast to others
         publishSkipUpdate({
           streamId,
           votes: result.votes,
-          threshold: result.threshold
+          threshold: result.threshold,
         });
 
         if (result.shouldSkip) {
@@ -1346,7 +1590,7 @@ export default function RoomPage() {
         }
       }
     } catch (error) {
-      console.error('Error voting to skip:', error);
+      console.error("Error voting to skip:", error);
     } finally {
       setIsVotingToSkip(false);
     }
@@ -1363,8 +1607,13 @@ export default function RoomPage() {
     }
 
     // Sort streams by upvote count
-    const sortedStreams = [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount);
-    const nextStream = sortedStreams.find((rs) => rs.streamId !== room.currentStream?.stream.id) || sortedStreams[0];
+    const sortedStreams = [...room.streams].sort(
+      (a, b) => b.upvoteCount - a.upvoteCount,
+    );
+    const nextStream =
+      sortedStreams.find(
+        (rs) => rs.streamId !== room.currentStream?.stream.id,
+      ) || sortedStreams[0];
 
     if (nextStream && handlePlayStreamRef.current) {
       await handlePlayStreamRef.current(nextStream.streamId);
@@ -1379,125 +1628,130 @@ export default function RoomPage() {
   }, [playNextStream]);
 
   // Helper to get upvoters for a video (from suggestions)
-  const getUpvotersForVideo = useCallback((videoId: string) => {
-    if (!room) return [];
+  const getUpvotersForVideo = useCallback(
+    (videoId: string) => {
+      if (!room) return [];
 
-    // Check if this video is in the queue
-    const stream = room.streams.find(s => s.stream.extractedId === videoId);
-    if (!stream || !stream.upvotes || stream.upvotes.length === 0) return [];
+      // Check if this video is in the queue
+      const stream = room.streams.find((s) => s.stream.extractedId === videoId);
+      if (!stream || !stream.upvotes || stream.upvotes.length === 0) return [];
 
-    // Map upvotes to member user data
-    return stream.upvotes.map(vote => {
-      const member = room.members.find(m => m.userId === vote.userId);
-      return member?.user;
-    }).filter(Boolean); // Type guard
-  }, [room]);
+      // Map upvotes to member user data
+      return stream.upvotes
+        .map((vote) => {
+          const member = room.members.find((m) => m.userId === vote.userId);
+          return member?.user;
+        })
+        .filter(Boolean); // Type guard
+    },
+    [room],
+  );
 
-  const handleRecommendUpvote = async (video: any) => {
+  const handleAddToQueue = async (video: any) => {
     if (!roomId) return;
 
     // Check if video is already in queue
-    const existingStream = room?.streams.find(s => s.stream.extractedId === video.id);
+    const existingStream = room?.streams.find(
+      (s) => s.stream.extractedId === video.id,
+    );
 
-    // Creator: Play immediately (Add if needed -> Play)
-    if (isRoomCreator) {
-      if (existingStream) {
-        // Just play existing
-        handlePlayStream(existingStream.streamId);
-      } else {
-        // Optimistic Add + Play
-        const tempId = `temp-${video.id}`;
-
-        // Optimistic update
-        setRoom(prev => {
-          if (!prev) return null;
-          const optimisticStream = {
-            id: tempId,
-            streamId: tempId,
-            roomId: prev.id,
-            addedById: userId || '',
-            played: false,
-            playedAt: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            order: prev.streams.length + 1,
-            stream: {
-              id: tempId,
-              title: video.title,
-              url: `https://www.youtube.com/watch?v=${video.id}`,
-              extractedId: video.id,
-              bigImg: video.thumbnail?.url || video.thumbnail || '',
-              smallImg: video.thumbnail?.url || video.thumbnail || '',
-              type: 'Youtube' as const,
-              active: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              userId: userId || ''
-            },
-            addedBy: { id: userId || '', email: '' },
-            upvoteCount: 1, // Auto-vote
-            upvotes: [],
-            _count: { upvotes: 1 }
-          };
-
-          return {
-            ...prev,
-            streams: [...prev.streams, optimisticStream],
-            currentStream: {
-              id: tempId,
-              stream: optimisticStream.stream
-            }
-          };
-        });
-
-        // Publish stream change immediately (optimistic)
-        publishStreamChange(tempId);
-
-        try {
-          // Add to backend
-          const response = await fetch(`/api/rooms/${roomId}/streams`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${video.id}` })
-          });
-
-          if (response.ok) {
-            const newStream = await response.json();
-            const realStreamId = newStream.data.streamId; // get the real ID (Stream.id)
-
-            // Now play it properly with the real ID
-            await fetch(`/api/rooms/${roomId}/streams/${realStreamId}/play`, {
-              method: 'PUT',
-              credentials: 'include'
-            });
-
-            fetchRoom();
-          }
-        } catch (error) {
-          console.error('Error adding recommended video:', error);
-          fetchRoom(); // Revert on error
-        }
-      }
+    // If already in queue, do nothing
+    if (existingStream) {
+      addToast("Already in queue", "info");
       return;
     }
 
-    // Member: Vote logic
-    if (existingStream) {
-      // Already exists -> Upvote it
-      handleUpvote(existingStream.streamId);
-    } else {
-      // Deep Optimistic Add for Member
-      const tempId = `temp-${video.id}`;
-      const previousRoom = room;
+    // Optimistic Add to Queue
+    const tempId = `temp-${video.id}`;
+    const previousRoom = room;
 
-      setRoom(prev => {
+    setRoom((prev) => {
+      if (!prev) return null;
+      const optimisticStream = {
+        id: tempId,
+        streamId: tempId,
+        roomId: prev.id,
+        addedById: userId || "",
+        played: false,
+        playedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        order: prev.streams.length + 1,
+        stream: {
+          id: tempId,
+          title: video.title,
+          url: `https://www.youtube.com/watch?v=${video.id}`,
+          extractedId: video.id,
+          bigImg: video.thumbnail || "",
+          smallImg: video.thumbnail || "",
+          type: "Youtube" as const,
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: userId || "",
+        },
+        addedBy: { id: userId || "", email: "" },
+        upvoteCount: 1,
+        upvotes: [{ id: "temp-vote", userId: userId || "" }],
+        _count: { upvotes: 1 },
+      };
+
+      return {
+        ...prev,
+        streams: [...prev.streams, optimisticStream],
+      };
+    });
+
+    triggerUpvoteEffect(tempId);
+    addToast("Added to queue", "success");
+
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/streams`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: `https://www.youtube.com/watch?v=${video.id}`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add video");
+      }
+
+      // Re-fetch to ensure server-side consistency
+      fetchRoom();
+    } catch (error) {
+      console.error("Error adding recommended video:", error);
+      // Revert on failure
+      setRoom(previousRoom);
+      addToast("Failed to add to queue", "error");
+    }
+  };
+
+  const handlePlayNow = async (video: any) => {
+    if (!roomId) return;
+
+    // Check if video is already in queue
+    const existingStream = room?.streams.find(
+      (s) => s.stream.extractedId === video.id,
+    );
+
+    if (existingStream) {
+      // Just play existing
+      handlePlayStream(existingStream.streamId);
+    } else {
+      // Optimistic Add + Play
+      const tempId = `temp-${video.id}`;
+
+      // Optimistic update
+      setRoom((prev) => {
         if (!prev) return null;
         const optimisticStream = {
           id: tempId,
           streamId: tempId,
           roomId: prev.id,
-          addedById: userId || '',
+          addedById: userId || "",
           played: false,
           playedAt: null,
           createdAt: new Date(),
@@ -1508,55 +1762,69 @@ export default function RoomPage() {
             title: video.title,
             url: `https://www.youtube.com/watch?v=${video.id}`,
             extractedId: video.id,
-            bigImg: video.thumbnail || '',
-            smallImg: video.thumbnail || '',
-            type: 'Youtube' as const,
+            bigImg: video.thumbnail?.url || video.thumbnail || "",
+            smallImg: video.thumbnail?.url || video.thumbnail || "",
+            type: "Youtube" as const,
             active: true,
             createdAt: new Date(),
             updatedAt: new Date(),
-            userId: userId || ''
+            userId: userId || "",
           },
-          addedBy: { id: userId || '', email: '' },
-          upvoteCount: 1,
-          upvotes: [{ id: 'temp-vote', userId: userId || '' }],
-          _count: { upvotes: 1 }
+          addedBy: { id: userId || "", email: "" },
+          upvoteCount: 1, // Auto-vote
+          upvotes: [],
+          _count: { upvotes: 1 },
         };
 
         return {
           ...prev,
-          streams: [...prev.streams, optimisticStream]
+          streams: [...prev.streams, optimisticStream],
+          currentStream: {
+            id: tempId,
+            stream: optimisticStream.stream,
+          },
         };
       });
 
-      triggerUpvoteEffect(tempId);
-      addToast('Added to queue', 'success');
+      // Publish stream change immediately (optimistic)
+      publishStreamChange(tempId);
 
       try {
+        // Add to backend
         const response = await fetch(`/api/rooms/${roomId}/streams`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${video.id}` })
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: `https://www.youtube.com/watch?v=${video.id}`,
+          }),
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to add video');
+        if (response.ok) {
+          const newStream = await response.json();
+          const realStreamId = newStream.data.streamId; // get the real ID (Stream.id)
+
+          // Now play it properly with the real ID
+          await fetch(`/api/rooms/${roomId}/streams/${realStreamId}/play`, {
+            method: "PUT",
+            credentials: "include",
+          });
+
+          fetchRoom();
         }
-        fetchRoom();
       } catch (error) {
-        console.error('Error adding video:', error);
-        setRoom(previousRoom);
-        addToast('Failed to add video', 'error');
+        console.error("Error adding recommended video:", error);
+        fetchRoom(); // Revert on error
       }
     }
   };
 
-
   // Determine if we should show the loading skeleton
-  // We show it if: 
+  // We show it if:
   // 1. Initial room data is loading
   // 2. User is authenticated but not yet a member/creator and the JOIN process is in progress
-  const isDirectEntryLoading = loading || (userId && !isRoomMember && !isRoomCreator && isJoining);
+  const isDirectEntryLoading =
+    loading || (userId && !isRoomMember && !isRoomCreator && isJoining);
 
   if (isDirectEntryLoading) {
     return (
@@ -1595,7 +1863,7 @@ export default function RoomPage() {
           <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
             <p className="text-red-400">{error}</p>
             <button
-              onClick={() => router.push('/rooms')}
+              onClick={() => router.push("/rooms")}
               className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
             >
               Back to Rooms
@@ -1609,8 +1877,9 @@ export default function RoomPage() {
   if (!room) return null;
 
   // Sort streams by upvote count
-  const sortedStreams = room.streams ? [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount) : [];
-
+  const sortedStreams = room.streams
+    ? [...room.streams].sort((a, b) => b.upvoteCount - a.upvoteCount)
+    : [];
 
   return (
     <div className="min-h-screen bg-black text-gray-100 selection:bg-gray-500/30 selection:text-white pb-20 md:pb-0 overflow-x-hidden">
@@ -1618,7 +1887,10 @@ export default function RoomPage() {
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gray-500/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-gray-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div
+          className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-gray-600/10 rounded-full blur-[120px] animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
         <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-gray-400/5 rounded-full blur-[100px]" />
       </div>
 
@@ -1654,7 +1926,10 @@ export default function RoomPage() {
                 {room.name}
                 {isRoomCreator && (
                   <div className="bg-yellow-500/10 border border-yellow-500/30 p-1.5 rounded-xl shadow-lg shadow-yellow-500/5">
-                    <Crown size={20} className="text-yellow-500 fill-yellow-500/20" />
+                    <Crown
+                      size={20}
+                      className="text-yellow-500 fill-yellow-500/20"
+                    />
                   </div>
                 )}
               </h1>
@@ -1666,7 +1941,10 @@ export default function RoomPage() {
               <div className="flex items-center gap-6 pt-2">
                 <div className="flex -space-x-3 overflow-hidden">
                   {room.members.slice(0, 5).map((member, i) => (
-                    <div key={i} className="relative inline-block h-8 w-8 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[10px] font-bold border border-white/10">
+                    <div
+                      key={i}
+                      className="relative inline-block h-8 w-8 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[10px] font-bold border border-white/10"
+                    >
                       {member.user.image ? (
                         <img
                           src={member.user.image}
@@ -1750,11 +2028,7 @@ export default function RoomPage() {
                     ))}
                   </div> */}
 
-
-
-
                   <div className="flex items-center gap-2">
-
                     <button
                       onClick={handleLeave}
                       disabled={isLeaving}
@@ -1781,7 +2055,7 @@ export default function RoomPage() {
           </motion.div>
         )}
 
-        {/* Player Section */}
+        {/* Player and Queue Section */}
         {room.currentStream && (isRoomMember || isRoomCreator) && (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 mb-16">
             <motion.div
@@ -1802,8 +2076,12 @@ export default function RoomPage() {
                           <X size={48} className="text-red-500" />
                         </div>
                         <div>
-                          <h3 className="text-2xl font-bold text-white mb-2">Something went wrong</h3>
-                          <p className="text-gray-400 max-w-md mx-auto">{playerError}</p>
+                          <h3 className="text-2xl font-bold text-white mb-2">
+                            Something went wrong
+                          </h3>
+                          <p className="text-gray-400 max-w-md mx-auto">
+                            {playerError}
+                          </p>
                         </div>
                         <button
                           onClick={() => window.location.reload()}
@@ -1815,11 +2093,13 @@ export default function RoomPage() {
                     </div>
                   ) : (
                     <div
-                      className={`absolute inset-0 bg-gray-900 overflow-hidden flex items-center justify-center transition-opacity duration-500 z-10 ${!playerReady ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                      className={`absolute inset-0 bg-gray-900 overflow-hidden flex items-center justify-center transition-opacity duration-500 z-10 ${!playerReady ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                     >
                       <div className="flex flex-col items-center gap-4">
                         <Loader2 className="w-12 h-12 text-white/20 animate-spin" />
-                        <p className="text-white/20 font-bold tracking-widest text-xs uppercase animate-pulse">Initializing Interface</p>
+                        <p className="text-white/20 font-bold tracking-widest text-xs uppercase animate-pulse">
+                          Initializing Interface
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1863,28 +2143,55 @@ export default function RoomPage() {
                             className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 hover:border-white/20 text-gray-400 hover:text-white transition-all"
                             title="Force Sync with Host"
                           >
-                            <RefreshCw size={14} className={isAutoHealing ? 'animate-spin' : ''} />
+                            <RefreshCw
+                              size={14}
+                              className={isAutoHealing ? "animate-spin" : ""}
+                            />
                           </button>
                         )}
                       </div>
                     )}
                     <div className="h-4 w-px bg-white/10" />
                     <button
-                      onClick={() => handleUpvote(room.currentStream!.stream.id)}
-                      disabled={isUpvoting === room.currentStream!.stream.id || !userId}
-                      className={`group relative flex items-center gap-2.5 px-5 py-2 rounded-xl border transition-all font-bold overflow-visible ${upvotedStreams.has(room.currentStream!.stream.id)
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : 'bg-white text-black border-transparent hover:scale-110 active:scale-90 shadow-xl shadow-white/5'
-                        }`}
+                      onClick={() =>
+                        handleUpvote(room.currentStream!.stream.id)
+                      }
+                      disabled={
+                        isUpvoting === room.currentStream!.stream.id || !userId
+                      }
+                      className={`group relative flex items-center gap-2.5 px-5 py-2 rounded-xl border transition-all font-bold overflow-visible ${
+                        upvotedStreams.has(room.currentStream!.stream.id)
+                          ? "bg-white/10 border-white/20 text-white"
+                          : "bg-white text-black border-transparent hover:scale-110 active:scale-90 shadow-xl shadow-white/5"
+                      }`}
                     >
-                      <VotedParticles streamId={room.currentStream.stream.id} effects={upvoteEffects} />
+                      <VotedParticles
+                        streamId={room.currentStream.stream.id}
+                        effects={upvoteEffects}
+                      />
                       <motion.div
-                        animate={upvotedStreams.has(room.currentStream.stream.id) ? { scale: [1, 1.2, 1] } : {}}
+                        animate={
+                          upvotedStreams.has(room.currentStream.stream.id)
+                            ? { scale: [1, 1.2, 1] }
+                            : {}
+                        }
                         transition={{ duration: 0.3 }}
                         className="flex items-center gap-2.5"
                       >
-                        <ThumbsUp size={18} className={upvotedStreams.has(room.currentStream!.stream.id) ? 'fill-white' : ''} />
-                        <span>{room.streams.find(rs => rs.streamId === room.currentStream!.stream.id)?.upvoteCount ?? 0}</span>
+                        <ThumbsUp
+                          size={18}
+                          className={
+                            upvotedStreams.has(room.currentStream!.stream.id)
+                              ? "fill-white"
+                              : ""
+                          }
+                        />
+                        <span>
+                          {room.streams.find(
+                            (rs) =>
+                              rs.streamId === room.currentStream!.stream.id,
+                          )?.upvoteCount ?? 0}
+                        </span>
                       </motion.div>
                       {!upvotedStreams.has(room.currentStream.stream.id) && (
                         <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity blur-xl -z-10 rounded-full" />
@@ -1896,25 +2203,35 @@ export default function RoomPage() {
                 <div className="flex flex-col items-end gap-3 w-full sm:w-auto self-end sm:self-center">
                   <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
                     <span>Vote Skip Status</span>
-                    <span className="text-white ml-auto">{skipInfo.votes.length} / {skipInfo.threshold}</span>
+                    <span className="text-white ml-auto">
+                      {skipInfo.votes.length} / {skipInfo.threshold}
+                    </span>
                   </div>
                   <div className="w-full sm:w-64 bg-white/5 rounded-full h-2 overflow-hidden border border-white/5 p-0.5">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${(skipInfo.votes.length / skipInfo.threshold) * 100}%` }}
+                      animate={{
+                        width: `${(skipInfo.votes.length / skipInfo.threshold) * 100}%`,
+                      }}
                       className="bg-red-500 h-full rounded-full shadow-[0_0_12px_rgba(239,68,68,0.4)]"
                     />
                   </div>
                   <button
                     onClick={handleSkipVote}
                     disabled={isVotingToSkip}
-                    className={`group w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all ${skipInfo.votes.includes(userId || '')
-                      ? 'bg-red-500/10 text-red-500 border border-red-500/20 cursor-default'
-                      : 'bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20'
-                      }`}
+                    className={`group w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all ${
+                      skipInfo.votes.includes(userId || "")
+                        ? "bg-red-500/10 text-red-500 border border-red-500/20 cursor-default"
+                        : "bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20"
+                    }`}
                   >
-                    <LogOut size={16} className="rotate-90 group-hover:translate-x-1 transition-transform" />
-                    {skipInfo.votes.includes(userId || '') ? 'Voted' : 'Skip Next'}
+                    <LogOut
+                      size={16}
+                      className="rotate-90 group-hover:translate-x-1 transition-transform"
+                    />
+                    {skipInfo.votes.includes(userId || "")
+                      ? "Voted"
+                      : "Skip Next"}
                   </button>
                 </div>
               </div>
@@ -1929,53 +2246,67 @@ export default function RoomPage() {
               {/* Recommendations */}
               <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col h-full max-h-[460px] shadow-2xl">
                 {/* Search Header */}
-                <div className="hidden border-b border-white/10 bg-white/[0.02] sm:grid grid-cols-2">
+                <div className="grid grid-cols-2 border-b border-white/10 bg-white/[0.02]">
                   <button
-                    onClick={() => setActiveTab('queue')}
-                    className={`p-4 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'queue' ? 'bg-white/5 text-white border-b-2 border-white' : 'text-gray-500 hover:text-white hover:bg-white/5'
-                      }`}
+                    onClick={() => setActiveTab("queue")}
+                    className={`p-4 text-sm font-bold uppercase tracking-widest transition-colors ${
+                      activeTab === "queue"
+                        ? "bg-white/5 text-white border-b-2 border-white"
+                        : "text-gray-500 hover:text-white hover:bg-white/5"
+                    }`}
                   >
                     Queue ({room.streams.length - (room.currentStream ? 1 : 0)})
                   </button>
                   <button
-                    onClick={() => setActiveTab('suggestions')}
-                    className={`p-4 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'suggestions' ? 'bg-white/5 text-white border-b-2 border-white' : 'text-gray-500 hover:text-white hover:bg-white/5'
-                      }`}
+                    onClick={() => setActiveTab("suggestions")}
+                    className={`p-4 text-sm font-bold uppercase tracking-widest transition-colors ${
+                      activeTab === "suggestions"
+                        ? "bg-white/5 text-white border-b-2 border-white"
+                        : "text-gray-500 hover:text-white hover:bg-white/5"
+                    }`}
                   >
                     Suggestions
                   </button>
                 </div>
-                {activeTab === 'suggestions' && (
+                {activeTab === "suggestions" && (
                   <div className="p-6 border-b border-white/10 bg-white/[0.02] space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-bold text-white tracking-tight">
-                        {searchQuery ? 'Search Results' : 'Smart Suggestions'}
+                        {searchQuery ? "Search Results" : "Smart Suggestions"}
                       </h3>
                       {!searchQuery && (
-                        <div className="px-2 py-0.5 bg-gray-500/20 rounded-md text-[10px] font-bold text-gray-400">BETA</div>
+                        <div className="px-2 py-0.5 bg-gray-500/20 rounded-md text-[10px] font-bold text-gray-400">
+                          BETA
+                        </div>
                       )}
                     </div>
 
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search size={16} className="text-gray-500 group-focus-within:text-white transition-colors" />
+                        <Search
+                          size={16}
+                          className="text-gray-500 group-focus-within:text-white transition-colors"
+                        />
                       </div>
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search for videos..."
-                        className="block w-full pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all font-medium"
+                        className="block w-full pl-10 pr-10 py-3 min-h-[44px] bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all font-medium"
                       />
                       {searchQuery && (
                         <button
                           onClick={() => {
-                            setSearchQuery('');
+                            setSearchQuery("");
                             setSearchResults([]);
                           }}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center min-h-[44px] flex items-center justify-center"
                         >
-                          <X size={14} className="text-gray-500 hover:text-white transition-colors" />
+                          <X
+                            size={14}
+                            className="text-gray-500 hover:text-white transition-colors"
+                          />
                         </button>
                       )}
                     </div>
@@ -1983,280 +2314,294 @@ export default function RoomPage() {
                 )}
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                  {activeTab === 'queue' ? (
-                    sortedStreams.filter(s => s.streamId !== room.currentStream?.stream.id).length > 0 ? (
-                      sortedStreams
-                        .filter(s => s.streamId !== room.currentStream?.stream.id)
-                        .map((stream) => {
-                          const video = {
-                            id: stream.stream.extractedId,
-                            title: stream.stream.title,
-                            thumbnail: stream.stream.smallImg,
-                            channelTitle: 'In Queue',
-                            duration: '',
-                            streamId: stream.streamId
-                          };
-                          // Use same handler (it handles Play for creator, Upvote for member)
-                          // But wait, handleRecommendUpvote expects a 'video' object with 'id' as extractedId
-                          // We should verify what handleRecommendUpvote expects.
-                          // It expects { id, title, thumbnail, ... } where id is extractedId.
-
-                          return (
-                            <motion.div
-                              key={stream.streamId}
-                              whileHover={{ scale: 1.02, x: 4 }}
-                              className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${stream.upvoteCount > 0
-                                ? 'bg-white/[0.05] border-white/20 shadow-lg shadow-white/5'
-                                : 'bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10'
-                                }`}
-                            >
-                              <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
-                                <img
-                                  src={stream.stream.smallImg || `https://i.ytimg.com/vi/${stream.stream.extractedId}/mqdefault.jpg`}
-                                  alt={stream.stream.title}
-                                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
-                                />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <motion.button
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => isRoomCreator ? handlePlayStream(stream.streamId) : handleUpvote(stream.streamId)}
-                                    className={`p-2.5 rounded-xl border transition-all relative ${upvotedStreams.has(stream.streamId)
-                                      ? 'bg-white text-black border-white'
-                                      : 'bg-black/40 backdrop-blur-md border-white/20 text-white hover:bg-white hover:text-black hover:border-white'
-                                      }`}
-                                  >
-                                    <VotedParticles streamId={stream.streamId} effects={upvoteEffects} />
-                                    {isRoomCreator ? (
-                                      <Play size={16} className="fill-current ml-0.5" />
-                                    ) : (
-                                      upvotedStreams.has(stream.streamId) ? <Sparkles size={16} className="fill-current animate-pulse" /> : <ThumbsUp size={16} />
-                                    )}
-                                  </motion.button>
-                                </div>
-
-                                {(stream.upvoteCount > 0 || upvotedStreams.has(stream.streamId)) && (
-                                  <div className={`absolute inset-0 ring-2 rounded-xl pointer-events-none ${upvotedStreams.has(stream.streamId) ? 'ring-white/40' : 'ring-white/10'}`} />
-                                )}
-
-                                {/* Voting Overlay */}
-                                {(stream.upvotes?.length > 0) && (
-                                  <>
-                                    <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
-                                      {stream.upvotes.slice(0, 3).map((vote, i) => {
-                                        const member = room.members.find(m => m.userId === vote.userId);
-                                        return (
-                                          <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
-                                            {member?.user.image ? (
-                                              <img src={member.user.image} alt={member.user.email} className="w-full h-full object-cover" />
-                                            ) : (
-                                              <span className="text-white">{(member?.user.email || 'A')[0]?.toUpperCase()}</span>
-                                            )}
-                                          </div>
-                                        )
-                                      })}
-                                      {stream.upvotes.length > 3 && (
-                                        <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
-                                          +{stream.upvotes.length - 3}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
-                                      <ThumbsUp size={10} className="fill-black" />
-                                      {stream.upvoteCount}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
-                                <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
-                                  {stream.stream.title}
-                                </h4>
-                                <div className="flex items-center justify-between">
-                                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">
-                                    Queue Position: {sortedStreams.indexOf(stream)}
-                                  </p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })
-                    ) : (
-                      <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50 grayscale">
-                        <div className="p-4 bg-white/5 rounded-full mb-4">
-                          <Play size={32} className="stroke-[1.5] ml-1" />
-                        </div>
-                        <p className="text-xs font-bold uppercase tracking-widest mb-2">Queue is Empty</p>
-                        <p className="text-[10px] max-w-[200px]">Switch to Suggestions or Search to add videos</p>
-                      </div>
-                    )
-                  ) : (
-                    isSearching ? (
-                      <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
-                        <Loader2 className="animate-spin" size={24} />
-                        <span className="text-xs font-bold uppercase tracking-wider">Searching...</span>
-                      </div>
-                    ) : searchQuery ? (
-                      searchResults.length > 0 ? (
-                        searchResults.map((video) => (
+                  {activeTab === "queue" ? (
+                    (() => {
+                      const queueStreams = sortedStreams.filter(
+                        (s) => s.streamId !== room.currentStream?.stream.id,
+                      );
+                      return queueStreams.length > 0 ? (
+                        queueStreams.map((stream) => (
                           <motion.div
-                            key={video.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            key={stream.streamId}
                             whileHover={{ scale: 1.02, x: 4 }}
-                            onClick={() => handleRecommendUpvote(video)}
-                            className="group flex gap-4 p-3 bg-white/[0.02] hover:bg-white/[0.08] border border-white/[0.05] hover:border-white/10 rounded-2xl cursor-pointer transition-all active:scale-95"
+                            className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${
+                              stream.upvoteCount > 0
+                                ? "bg-white/[0.05] border-white/20 shadow-lg shadow-white/5"
+                                : "bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10"
+                            }`}
                           >
                             <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
                               <img
-                                src={video.thumbnail as string}
-                                alt={video.title}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                              />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <Plus size={20} className="text-white transform scale-50 group-hover:scale-100 transition-transform" />
-                              </div>
-
-                              {/* Voting Overlay */}
-                              {getUpvotersForVideo(video.id).length > 0 && (
-                                <>
-                                  <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
-                                    {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
-                                      <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
-                                        {user?.image ? (
-                                          <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
-                                        ) : (
-                                          <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
-                                        )}
-                                      </div>
-                                    ))}
-                                    {getUpvotersForVideo(video.id).length > 3 && (
-                                      <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
-                                        +{getUpvotersForVideo(video.id).length - 3}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
-                                    <ThumbsUp size={10} className="fill-black" />
-                                    {getUpvotersForVideo(video.id).length}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
-                              <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
-                                {video.title}
-                              </h4>
-                              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
-                            </div>
-                          </motion.div>
-                        ))
-                      ) : (
-                        <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50">
-                          <Search size={40} className="mb-4 stroke-[1.5]" />
-                          <p className="text-xs font-bold uppercase tracking-widest">No results found</p>
-                        </div>
-                      )
-                    ) : (
-                      // Default Recommendations View
-                      isLoadingRecommended ? (
-                        Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="flex gap-4 p-3 bg-white/5 rounded-2xl animate-pulse">
-                            <div className="w-24 h-14 bg-white/10 rounded-xl shrink-0" />
-                            <div className="space-y-2 flex-1 pt-1">
-                              <div className="h-4 bg-white/10 rounded-lg w-full" />
-                              <div className="h-3 bg-white/10 rounded-lg w-2/3" />
-                            </div>
-                          </div>
-                        ))
-                      ) : displayedSuggestions.length > 0 ? (
-                        displayedSuggestions.map((video) => (
-                          <motion.div
-                            key={video.id}
-                            whileHover={{ scale: 1.02, x: 4 }}
-                            className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${(video as any).upvoteCount > 0
-                              ? 'bg-white/[0.05] border-white/20 shadow-lg shadow-white/5'
-                              : 'bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10'
-                              }`}
-                          >
-                            <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
-                              <img
-                                src={video.thumbnail as string}
-                                alt={video.title}
+                                src={
+                                  stream.stream.smallImg ||
+                                  `https://i.ytimg.com/vi/${stream.stream.extractedId}/mqdefault.jpg`
+                                }
+                                alt={stream.stream.title}
                                 className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
                               />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                 <motion.button
                                   whileHover={{ scale: 1.1 }}
                                   whileTap={{ scale: 0.9 }}
-                                  onClick={() => handleRecommendUpvote(video)}
-                                  className={`p-2.5 rounded-xl border transition-all relative ${upvotedStreams.has(video.id)
-                                    ? 'bg-white text-black border-white'
-                                    : 'bg-black/40 backdrop-blur-md border-white/20 text-white hover:bg-white hover:text-black hover:border-white'
-                                    }`}
+                                  onClick={() =>
+                                    isRoomCreator
+                                      ? handlePlayStream(stream.streamId)
+                                      : handleUpvote(stream.streamId)
+                                  }
+                                  className={`p-2.5 rounded-xl border transition-all relative ${
+                                    upvotedStreams.has(stream.streamId)
+                                      ? "bg-white text-black border-white"
+                                      : "bg-black/40 backdrop-blur-md border-white/20 text-white hover:bg-white hover:text-black hover:border-white"
+                                  }`}
                                 >
-                                  <VotedParticles streamId={video.id} effects={upvoteEffects} />
-                                  {upvotedStreams.has(video.id) ? <Sparkles size={16} className="fill-current animate-pulse" /> : <Plus size={16} />}
+                                  <VotedParticles
+                                    streamId={stream.streamId}
+                                    effects={upvoteEffects}
+                                  />
+                                  {isRoomCreator ? (
+                                    <Play
+                                      size={16}
+                                      className="fill-current ml-0.5"
+                                    />
+                                  ) : upvotedStreams.has(stream.streamId) ? (
+                                    <Sparkles
+                                      size={16}
+                                      className="fill-current animate-pulse"
+                                    />
+                                  ) : (
+                                    <ThumbsUp size={16} />
+                                  )}
                                 </motion.button>
                               </div>
-                              {video.duration && (
-                                <span className="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded-lg text-white font-bold">
-                                  {video.duration}
-                                </span>
-                              )}
 
-                              {(video as any).upvoteCount > 0 && (
-                                <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl pointer-events-none" />
+                              {(stream.upvoteCount > 0 ||
+                                upvotedStreams.has(stream.streamId)) && (
+                                <div
+                                  className={`absolute inset-0 ring-2 rounded-xl pointer-events-none ${upvotedStreams.has(stream.streamId) ? "ring-white/40" : "ring-white/10"}`}
+                                />
                               )}
 
                               {/* Voting Overlay */}
-                              {getUpvotersForVideo(video.id).length > 0 && (
+                              {stream.upvotes?.length > 0 && (
                                 <>
                                   <div className="absolute top-1 right-1 z-10 flex -space-x-1.5">
-                                    {getUpvotersForVideo(video.id).slice(0, 3).map((user: any, i: number) => (
-                                      <div key={i} className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg">
-                                        {user?.image ? (
-                                          <img src={user.image} alt={user.email} className="w-full h-full object-cover" />
-                                        ) : (
-                                          <span className="text-white">{user?.email?.[0]?.toUpperCase()}</span>
-                                        )}
-                                      </div>
-                                    ))}
-                                    {getUpvotersForVideo(video.id).length > 3 && (
+                                    {stream.upvotes
+                                      .slice(0, 3)
+                                      .map((vote, i) => {
+                                        const member = room.members.find(
+                                          (m) => m.userId === vote.userId,
+                                        );
+                                        return (
+                                          <div
+                                            key={i}
+                                            className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-800 flex items-center justify-center text-[6px] font-bold border border-white/20 overflow-hidden shadow-lg"
+                                          >
+                                            {member?.user.image ? (
+                                              <img
+                                                src={member.user.image}
+                                                alt={member.user.email}
+                                                className="w-full h-full object-cover"
+                                              />
+                                            ) : (
+                                              <span className="text-white">
+                                                {(member?.user.email ||
+                                                  "A")[0]?.toUpperCase()}
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    {stream.upvotes.length > 3 && (
                                       <div className="w-5 h-5 rounded-full ring-2 ring-black bg-gray-700 flex items-center justify-center text-[6px] font-bold border border-white/20 shadow-lg text-white">
-                                        +{getUpvotersForVideo(video.id).length - 3}
+                                        +{stream.upvotes.length - 3}
                                       </div>
                                     )}
                                   </div>
                                   <div className="absolute bottom-1 left-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-lg shadow-2xl flex items-center gap-1 z-20">
-                                    <ThumbsUp size={10} className="fill-black" />
-                                    {getUpvotersForVideo(video.id).length}
+                                    <ThumbsUp
+                                      size={10}
+                                      className="fill-black"
+                                    />
+                                    {stream.upvoteCount}
                                   </div>
                                 </>
                               )}
                             </div>
                             <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
                               <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
-                                {video.title}
+                                {stream.stream.title}
                               </h4>
-                              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">{video.channelTitle}</p>
+                              <div className="flex items-center justify-between">
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">
+                                  Position {queueStreams.indexOf(stream) + 1} •
+                                  Added by{" "}
+                                  {stream.addedBy?.email?.split("@")[0] ||
+                                    "Anonymous"}
+                                </p>
+                              </div>
                             </div>
                           </motion.div>
                         ))
                       ) : (
-                        <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50 grayscale">
-                          <Search size={40} className="mb-4 stroke-[3]" />
-                          <p className="text-xs font-bold uppercase tracking-widest">No suggestions available</p>
+                        <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50">
+                          <div className="p-4 bg-white/5 rounded-full mb-4">
+                            <ListMusic size={32} className="stroke-[1.5]" />
+                          </div>
+                          <p className="text-xs font-bold uppercase tracking-widest mb-2">
+                            Queue is Empty
+                          </p>
+                          <p className="text-[10px] max-w-[200px] mb-4">
+                            Switch to Suggestions or Search to add videos to the
+                            queue
+                          </p>
+                          <div className="flex gap-2 text-[8px] text-gray-500">
+                            <span>💡 Tip:</span>
+                            <span>
+                              Creators can play songs directly, members vote to
+                              queue
+                            </span>
+                          </div>
                         </div>
-                      )
-                    ))}
+                      );
+                    })()
+                  ) : isSearching ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
+                      <Loader2 className="animate-spin" size={24} />
+                      <span className="text-xs font-bold uppercase tracking-wider">
+                        Searching...
+                      </span>
+                    </div>
+                  ) : searchQuery ? (
+                    searchResults.length > 0 ? (
+                      searchResults.map((video) => (
+                        <motion.div
+                          key={video.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ scale: 1.02, x: 4 }}
+                          onClick={() => handleAddToQueue(video)}
+                          className="group flex gap-4 p-3 bg-white/[0.02] hover:bg-white/[0.08] border border-white/[0.05] hover:border-white/10 rounded-2xl cursor-pointer transition-all active:scale-95"
+                        >
+                          <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                            <img
+                              src={video.thumbnail as string}
+                              alt={video.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Plus
+                                size={20}
+                                className="text-white transform scale-50 group-hover:scale-100 transition-transform"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                            <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                              {video.title}
+                            </h4>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">
+                              {video.channelTitle}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50">
+                        <Search size={40} className="mb-4 stroke-[1.5]" />
+                        <p className="text-xs font-bold uppercase tracking-widest">
+                          No results found
+                        </p>
+                      </div>
+                    )
+                  ) : // Default Recommendations View
+                  isLoadingRecommended ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex gap-4 p-3 bg-white/5 rounded-2xl animate-pulse"
+                      >
+                        <div className="w-24 h-14 bg-white/10 rounded-xl shrink-0" />
+                        <div className="space-y-2 flex-1 pt-1">
+                          <div className="h-4 bg-white/10 rounded-lg w-full" />
+                          <div className="h-3 bg-white/10 rounded-lg w-2/3" />
+                        </div>
+                      </div>
+                    ))
+                  ) : displayedSuggestions.length > 0 ? (
+                    displayedSuggestions.map((video) => (
+                      <motion.div
+                        key={video.id}
+                        whileHover={{ scale: 1.02, x: 4 }}
+                        className={`group flex gap-4 p-3 border rounded-2xl cursor-pointer transition-all active:scale-95 ${
+                          (video as any).upvoteCount > 0
+                            ? "bg-white/[0.05] border-white/20 shadow-lg shadow-white/5"
+                            : "bg-white/[0.02] hover:bg-white/[0.08] border-white/[0.05] hover:border-white/10"
+                        }`}
+                      >
+                        <div className="relative w-28 h-16 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                          <img
+                            src={video.thumbnail as string}
+                            alt={video.title}
+                            className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handleAddToQueue(video)}
+                              className={`p-2.5 rounded-xl border transition-all relative ${
+                                upvotedStreams.has(video.id)
+                                  ? "bg-white text-black border-white"
+                                  : "bg-black/40 backdrop-blur-md border-white/20 text-white hover:bg-white hover:text-black hover:border-white"
+                              }`}
+                            >
+                              <VotedParticles
+                                streamId={video.id}
+                                effects={upvoteEffects}
+                              />
+                              {upvotedStreams.has(video.id) ? (
+                                <Sparkles
+                                  size={16}
+                                  className="fill-current animate-pulse"
+                                />
+                              ) : (
+                                <ThumbsUp size={16} />
+                              )}
+                            </motion.button>
+                          </div>
+                          {video.duration && (
+                            <span className="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded-lg text-white font-bold">
+                              {video.duration}
+                            </span>
+                          )}
+
+                          {(video as any).upvoteCount > 0 && (
+                            <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl pointer-events-none" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                          <h4 className="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                            {video.title}
+                          </h4>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider truncate">
+                            {video.channelTitle}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 text-center text-gray-600 opacity-50 grayscale">
+                      <Search size={40} className="mb-4 stroke-[3]" />
+                      <p className="text-xs font-bold uppercase tracking-widest">
+                        No suggestions available
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
           </div>
         )}
-
-
 
         {/* Direct Entry Wall (Only for Unauthenticated) */}
         {!session && (
@@ -2268,19 +2613,33 @@ export default function RoomPage() {
             <div className="inline-flex p-6 bg-white/5 rounded-[2rem] mb-8 border border-white/5">
               <Users size={48} className="text-gray-500 stroke-[1.5]" />
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-widest uppercase mb-4">Awaiting Admission</h2>
-            <p className="text-gray-500 font-bold max-w-md mx-auto mb-10 text-xs uppercase tracking-[0.3em]">Sign in to synchronized playback and collective curation</p>
+            <h2 className="text-2xl font-bold text-white tracking-widest uppercase mb-4">
+              Awaiting Admission
+            </h2>
+            <p className="text-gray-500 font-bold max-w-md mx-auto mb-10 text-xs uppercase tracking-[0.3em]">
+              Sign in to synchronized playback and collective curation
+            </p>
             <button
-              onClick={() => router.push('/api/auth/signin')}
+              onClick={() => router.push("/api/auth/signin")}
               className="group relative px-12 py-5 bg-white text-black rounded-[2rem] font-bold overflow-hidden hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10"
             >
-              <span className="relative z-10 text-xl tracking-tight">SIGN IN TO JOIN</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="relative z-10 text-xl tracking-tight">
+                SIGN IN TO JOIN
+              </span>
+              <div>
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </button>
           </motion.div>
         )}
       </div>
+      {/* Bottom Chat Bar */}
+      <BottomChatBar
+        roomId={roomId}
+        userId={userId}
+        isRoomCreator={isRoomCreator}
+        className="border-t border-white/10"
+      />
     </div>
   );
 }
-

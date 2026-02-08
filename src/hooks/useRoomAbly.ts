@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { Realtime, RealtimeChannel } from 'ably';
+import { useEffect, useRef, useCallback, useState } from "react";
+import { Realtime, RealtimeChannel } from "ably";
 
 interface PlaybackUpdate {
   playbackTime: number;
@@ -44,7 +44,7 @@ interface RoomEndedUpdate {
 }
 
 interface PresenceUpdate {
-  action: 'enter' | 'leave' | 'update';
+  action: "enter" | "leave" | "update";
   clientId: string;
   data: any;
 }
@@ -62,10 +62,12 @@ interface UseRoomAblyOptions {
   onReaction?: (data: ReactionUpdate) => void;
   onSkipUpdate?: (data: SkipUpdate) => void;
   onMemberLeft?: (data: MemberLeftUpdate) => void;
-  onMemberJoined?: (data: { userId: string, user: any }) => void;
+  onMemberJoined?: (data: { userId: string; user: any }) => void;
   onCreatorTransferred?: (data: CreatorTransferredUpdate) => void;
   onRoomEnded?: (data: RoomEndedUpdate) => void;
   onPresenceUpdate?: (data: PresenceUpdate) => void;
+  onMessage?: (data: any) => void;
+  onVoiceEvent?: (data: any) => void;
   debugLog?: (message: string, data?: any) => void;
 }
 
@@ -80,9 +82,9 @@ const syncClockToServer = async (): Promise<number> => {
   for (let i = 0; i < sampleCount; i++) {
     const t0 = performance.now(); // Client send time
     try {
-      const response = await fetch('/api/time', {
-        method: 'GET',
-        cache: 'no-cache',
+      const response = await fetch("/api/time", {
+        method: "GET",
+        cache: "no-cache",
       });
       const t3 = performance.now(); // Client receive time
 
@@ -93,17 +95,17 @@ const syncClockToServer = async (): Promise<number> => {
 
         // Calculate round-trip time and offset
         // const rtt = t3 - t0; // Round-trip time (for reference)
-        const offset = ((t1 - t0) + (t2 - t3)) / 2; // Simplified NTP offset calculation
+        const offset = (t1 - t0 + (t2 - t3)) / 2; // Simplified NTP offset calculation
 
         samples.push(offset);
       }
     } catch (error) {
-      console.error('Error syncing clock:', error);
+      console.error("Error syncing clock:", error);
     }
 
     // Small delay between samples
     if (i < sampleCount - 1) {
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }
 
@@ -127,18 +129,23 @@ export const useRoomAbly = ({
   onCreatorTransferred,
   onRoomEnded,
   onPresenceUpdate,
+  onMessage,
+  onVoiceEvent,
   debugLog,
 }: UseRoomAblyOptions) => {
-  const log = useCallback((msg: string, data?: any) => {
-    // Console log for devtools
-    if (data) console.log(msg, data);
-    else console.log(msg);
+  const log = useCallback(
+    (msg: string, data?: any) => {
+      // Console log for devtools
+      if (data) console.log(msg, data);
+      else console.log(msg);
 
-    // UI log if provided
-    if (debugLog) {
-      debugLog(msg, data);
-    }
-  }, [debugLog]);
+      // UI log if provided
+      if (debugLog) {
+        debugLog(msg, data);
+      }
+    },
+    [debugLog],
+  );
 
   // Removed log from render body to prevent infinite re-renders with state updates
   // log('[SYNC_DEBUG] useRoomAbly hook called', { roomId, isCreator, hasRoomId: !!roomId, roomIdType: typeof roomId });
@@ -159,6 +166,9 @@ export const useRoomAbly = ({
   const onCreatorTransferredRef = useRef(onCreatorTransferred);
   const onRoomEndedRef = useRef(onRoomEnded);
   const onPresenceUpdateRef = useRef(onPresenceUpdate);
+  const onMessageRef = useRef(onMessage);
+  const onVoiceEventRef = useRef(onVoiceEvent);
+  const debugLogRef = useRef(debugLog);
 
   // Update refs when callbacks change (without triggering useEffect)
 
@@ -172,30 +182,57 @@ export const useRoomAbly = ({
     onCreatorTransferredRef.current = onCreatorTransferred;
     onRoomEndedRef.current = onRoomEnded;
     onPresenceUpdateRef.current = onPresenceUpdate;
-  }, [onPlaybackUpdate, onStreamChange, onReaction, onSkipUpdate, onMemberLeft, onMemberJoined, onCreatorTransferred, onRoomEnded, onPresenceUpdate]);
+    onMessageRef.current = onMessage;
+    onVoiceEventRef.current = onVoiceEvent;
+  }, [
+    onPlaybackUpdate,
+    onStreamChange,
+    onReaction,
+    onSkipUpdate,
+    onMemberLeft,
+    onMemberJoined,
+    onCreatorTransferred,
+    onRoomEnded,
+    onPresenceUpdate,
+    onMessage,
+    onVoiceEvent,
+  ]);
 
   // Initialize Ably connection
   useEffect(() => {
     // Only run on client side
-    if (typeof window === 'undefined') {
-      console.log('[SYNC_DEBUG] useEffect skipped - server side');
+    if (typeof window === "undefined") {
+      console.log("[SYNC_DEBUG] useEffect skipped - server side");
       return;
     }
 
-    console.log('[SYNC_DEBUG] useEffect for Ably initialization started', { roomId, isCreator, hasRoomId: !!roomId, roomIdType: typeof roomId, roomIdValue: String(roomId || 'null') });
+    console.log("[SYNC_DEBUG] useEffect for Ably initialization started", {
+      roomId,
+      isCreator,
+      hasRoomId: !!roomId,
+      roomIdType: typeof roomId,
+      roomIdValue: String(roomId || "null"),
+    });
 
     if (!roomId) {
-      console.log('[SYNC_DEBUG] useEffect early return - no roomId', { roomId, roomIdType: typeof roomId });
+      console.log("[SYNC_DEBUG] useEffect early return - no roomId", {
+        roomId,
+        roomIdType: typeof roomId,
+      });
       return;
     }
 
     const apiKey = process.env.NEXT_PUBLIC_ABLY_API_KEY;
     if (!apiKey) {
-      console.error('[SYNC_DEBUG] NEXT_PUBLIC_ABLY_API_KEY is not set');
+      console.error("[SYNC_DEBUG] NEXT_PUBLIC_ABLY_API_KEY is not set");
       return;
     }
 
-    console.log('[SYNC_DEBUG] Creating Ably Realtime instance', { roomId, isCreator, hasApiKey: !!apiKey });
+    console.log("[SYNC_DEBUG] Creating Ably Realtime instance", {
+      roomId,
+      isCreator,
+      hasApiKey: !!apiKey,
+    });
 
     const clientOptions: any = {
       key: apiKey,
@@ -218,20 +255,29 @@ export const useRoomAbly = ({
     ablyRef.current = ably;
     channelRef.current = channel;
 
-    console.log('[SYNC_DEBUG] Channel refs set', { roomId, isCreator, hasAblyRef: !!ablyRef.current, hasChannelRef: !!channelRef.current });
+    console.log("[SYNC_DEBUG] Channel refs set", {
+      roomId,
+      isCreator,
+      hasAblyRef: !!ablyRef.current,
+      hasChannelRef: !!channelRef.current,
+    });
 
     // Connection events
-    ably.connection.on('connected', async () => {
-      console.log('[SYNC_DEBUG] Ably connected', { roomId, isCreator, channelName: `room:${roomId}` });
+    ably.connection.on("connected", async () => {
+      console.log("[SYNC_DEBUG] Ably connected", {
+        roomId,
+        isCreator,
+        channelName: `room:${roomId}`,
+      });
       setIsConnected(true);
 
       // Enter presence if we have user info
       if (userId && userInfo) {
         try {
           await channel.presence.enter(userInfo);
-          console.log('[SYNC_DEBUG] Entered presence', { userId, userInfo });
+          console.log("[SYNC_DEBUG] Entered presence", { userId, userInfo });
         } catch (err) {
-          console.error('[SYNC_DEBUG] Failed to enter presence:', err);
+          console.error("[SYNC_DEBUG] Failed to enter presence:", err);
         }
       }
 
@@ -240,79 +286,93 @@ export const useRoomAbly = ({
       try {
         // Initial fast sync
         const start = performance.now();
-        const res = await fetch('/api/time', { method: 'GET', cache: 'no-cache' });
+        const res = await fetch("/api/time", {
+          method: "GET",
+          cache: "no-cache",
+        });
         if (res.ok) {
           const data = await res.json();
           const t1 = data.serverTime;
           const end = performance.now();
-          clockOffsetRef.current = (t1 - (start + end) / 2);
-          log('Fast clock sync complete, offset: ' + clockOffsetRef.current + ' ms');
+          clockOffsetRef.current = t1 - (start + end) / 2;
+          log(
+            "Fast clock sync complete, offset: " +
+              clockOffsetRef.current +
+              " ms",
+          );
 
           // Refine in background if needed
-          syncClockToServer().then(offset => {
-            clockOffsetRef.current = offset;
-            log('Refined clock sync complete, offset: ' + offset + ' ms');
-          }).catch(console.error);
+          syncClockToServer()
+            .then((offset) => {
+              clockOffsetRef.current = offset;
+              log("Refined clock sync complete, offset: " + offset + " ms");
+            })
+            .catch(console.error);
         }
       } catch (error) {
-        console.error('Failed to sync clock to server:', error);
+        console.error("Failed to sync clock to server:", error);
         clockOffsetRef.current = 0;
       }
     });
 
     // Periodic Clock Sync to maintain accuracy over time
     const clockSyncInterval = setInterval(() => {
-      if (ably.connection.state === 'connected') {
-        syncClockToServer().then(offset => {
-          clockOffsetRef.current = offset;
-          log('Periodic clock re-sync complete, offset: ' + offset + ' ms');
-        }).catch(err => console.warn('Periodic clock sync failed:', err));
+      if (ably.connection.state === "connected") {
+        syncClockToServer()
+          .then((offset) => {
+            clockOffsetRef.current = offset;
+            log("Periodic clock re-sync complete, offset: " + offset + " ms");
+          })
+          .catch((err) => console.warn("Periodic clock sync failed:", err));
       }
     }, 60000); // Every 60 seconds
 
-    ably.connection.on('disconnected', () => {
-      console.log('Ably disconnected');
+    ably.connection.on("disconnected", () => {
+      console.log("Ably disconnected");
       setIsConnected(false);
     });
 
-    ably.connection.on('failed', () => {
-      console.error('Ably connection failed');
+    ably.connection.on("failed", () => {
+      console.error("Ably connection failed");
       setIsConnected(false);
     });
 
     // Subscribe to presence changes
-    channel.presence.subscribe('enter', (member) => {
+    channel.presence.subscribe("enter", (member) => {
       if (onPresenceUpdateRef.current) {
         onPresenceUpdateRef.current({
-          action: 'enter',
+          action: "enter",
           clientId: member.clientId,
-          data: member.data
+          data: member.data,
         });
       }
     });
 
-    channel.presence.subscribe('leave', (member) => {
+    channel.presence.subscribe("leave", (member) => {
       if (onPresenceUpdateRef.current) {
         onPresenceUpdateRef.current({
-          action: 'leave',
+          action: "leave",
           clientId: member.clientId,
-          data: member.data
+          data: member.data,
         });
       }
     });
 
-    channel.presence.subscribe('update', (member) => {
+    channel.presence.subscribe("update", (member) => {
       if (onPresenceUpdateRef.current) {
         onPresenceUpdateRef.current({
-          action: 'update',
+          action: "update",
           clientId: member.clientId,
-          data: member.data
+          data: member.data,
         });
       }
     });
 
-    channel.subscribe('playback:update', (message) => {
-      log('[SyncDebug] Raw Ably message received:', { name: message.name, data: message.data });
+    channel.subscribe("playback:update", (message) => {
+      log("[SyncDebug] Raw Ably message received:", {
+        name: message.name,
+        data: message.data,
+      });
       const data = message.data as PlaybackUpdate;
 
       // RAVE-STYLE: Use Ably's message.timestamp directly as authoritative server time
@@ -327,12 +387,15 @@ export const useRoomAbly = ({
       if (!isCreator && onPlaybackUpdateRef.current) {
         onPlaybackUpdateRef.current(updateData);
       } else {
-        console.log('[SyncDebug] Skipping onPlaybackUpdate:', { isCreator, hasCallback: !!onPlaybackUpdateRef.current });
+        console.log("[SyncDebug] Skipping onPlaybackUpdate:", {
+          isCreator,
+          hasCallback: !!onPlaybackUpdateRef.current,
+        });
       }
     });
 
     // Subscribe to stream changes
-    channel.subscribe('stream:change', (message) => {
+    channel.subscribe("stream:change", (message) => {
       const data = message.data as { streamId: string };
       if (onStreamChangeRef.current) {
         onStreamChangeRef.current(data.streamId);
@@ -340,7 +403,7 @@ export const useRoomAbly = ({
     });
 
     // Subscribe to reactions
-    channel.subscribe('reaction', (message) => {
+    channel.subscribe("reaction", (message) => {
       const data = message.data as ReactionUpdate;
       if (onReactionRef.current) {
         onReactionRef.current(data);
@@ -348,7 +411,7 @@ export const useRoomAbly = ({
     });
 
     // Subscribe to skip votes
-    channel.subscribe('skip:update', (message) => {
+    channel.subscribe("skip:update", (message) => {
       const data = message.data as SkipUpdate;
       if (onSkipUpdateRef.current) {
         onSkipUpdateRef.current(data);
@@ -356,7 +419,7 @@ export const useRoomAbly = ({
     });
 
     // Subscribe to member left
-    channel.subscribe('member:left', (message) => {
+    channel.subscribe("member:left", (message) => {
       const data = message.data as MemberLeftUpdate;
       if (onMemberLeftRef.current) {
         onMemberLeftRef.current(data);
@@ -364,23 +427,53 @@ export const useRoomAbly = ({
     });
 
     // Subscribe to member joined
-    channel.subscribe('member:joined', (message) => {
-      const data = message.data as { userId: string, user: any };
+    channel.subscribe("member:joined", (message) => {
+      const data = message.data as { userId: string; user: any };
       if (onMemberJoinedRef.current) {
         onMemberJoinedRef.current(data);
       }
     });
 
     // Subscribe to creator transferred
-    channel.subscribe('creator:transferred', (message) => {
+    channel.subscribe("creator:transferred", (message) => {
       const data = message.data as CreatorTransferredUpdate;
       if (onCreatorTransferredRef.current) {
         onCreatorTransferredRef.current(data);
       }
     });
 
+    // Subscribe to chat messages
+    channel.subscribe("message", (message) => {
+      const data = message.data as any;
+      if (onMessageRef.current) {
+        onMessageRef.current(data);
+      }
+    });
+
+    // Subscribe to voice events
+    channel.subscribe("voice:start", (message) => {
+      const data = message.data as any;
+      if (onVoiceEventRef.current) {
+        onVoiceEventRef.current(data);
+      }
+    });
+
+    channel.subscribe("voice:end", (message) => {
+      const data = message.data as any;
+      if (onVoiceEventRef.current) {
+        onVoiceEventRef.current(data);
+      }
+    });
+
+    channel.subscribe("voice:data", (message) => {
+      const data = message.data as any;
+      if (onVoiceEventRef.current) {
+        onVoiceEventRef.current(data);
+      }
+    });
+
     // Subscribe to room ended
-    channel.subscribe('room:ended', (message) => {
+    channel.subscribe("room:ended", (message) => {
       const data = message.data as RoomEndedUpdate;
       if (onRoomEndedRef.current) {
         onRoomEndedRef.current(data);
@@ -388,7 +481,11 @@ export const useRoomAbly = ({
     });
 
     return () => {
-      console.log('[SYNC_DEBUG] useEffect cleanup running', { roomId, isCreator, hasChannel: !!channelRef.current });
+      console.log("[SYNC_DEBUG] useEffect cleanup running", {
+        roomId,
+        isCreator,
+        hasChannel: !!channelRef.current,
+      });
       channel.unsubscribe();
       ably.close();
       clearInterval(clockSyncInterval);
@@ -400,32 +497,56 @@ export const useRoomAbly = ({
 
   // Publish playback update (creator only)
   const publishPlaybackUpdate = useCallback(
-    async (playbackTime: number, isPlaying: boolean, startTime?: number, startServerTime?: number) => {
+    async (
+      playbackTime: number,
+      isPlaying: boolean,
+      startTime?: number,
+      startServerTime?: number,
+    ) => {
       // log('[SYNC_DEBUG] publishPlaybackUpdate called', { playbackTime, isPlaying, isCreator, hasChannel: !!channelRef.current, isConnected });
 
       // CRITICAL FIX: Only check for channel existence, not connection status
       // Ably will queue messages even if not fully connected yet
       if (!isCreator) {
-        log('[SYNC_DEBUG] publishPlaybackUpdate blocked - not creator', { isCreator });
+        log("[SYNC_DEBUG] publishPlaybackUpdate blocked - not creator", {
+          isCreator,
+        });
         return;
       }
 
       // If channel not available yet, wait briefly for initialization (max 2 seconds)
       if (!channelRef.current && roomId) {
-        log('[SYNC_DEBUG] publishPlaybackUpdate - channel not ready, waiting...', { hasChannel: !!channelRef.current, roomId, hasAbly: !!ablyRef.current });
+        log(
+          "[SYNC_DEBUG] publishPlaybackUpdate - channel not ready, waiting...",
+          {
+            hasChannel: !!channelRef.current,
+            roomId,
+            hasAbly: !!ablyRef.current,
+          },
+        );
 
         // Wait up to 2 seconds for channel to be initialized
         const startWait = Date.now();
-        while (!channelRef.current && (Date.now() - startWait) < 2000) {
-          await new Promise(resolve => setTimeout(resolve, 50));
+        while (!channelRef.current && Date.now() - startWait < 2000) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         if (!channelRef.current) {
-          console.error('[SYNC_DEBUG] publishPlaybackUpdate - channel still not available after wait', { hasChannel: !!channelRef.current, roomId, hasAbly: !!ablyRef.current });
+          console.error(
+            "[SYNC_DEBUG] publishPlaybackUpdate - channel still not available after wait",
+            {
+              hasChannel: !!channelRef.current,
+              roomId,
+              hasAbly: !!ablyRef.current,
+            },
+          );
           return;
         }
       } else if (!channelRef.current) {
-        console.warn('[SYNC_DEBUG] publishPlaybackUpdate blocked - no channel and no roomId', { hasChannel: !!channelRef.current, roomId });
+        console.warn(
+          "[SYNC_DEBUG] publishPlaybackUpdate blocked - no channel and no roomId",
+          { hasChannel: !!channelRef.current, roomId },
+        );
         return;
       }
 
@@ -443,13 +564,19 @@ export const useRoomAbly = ({
         startServerTime, // Should already be server time
       };
 
-      channelRef.current.publish('playback:update', data).then(() => {
-        console.log('[SYNC_DEBUG] Creator successfully published playback update', { playbackTime, isPlaying });
-      }).catch((err) => {
-        console.error('[SYNC_DEBUG] Error publishing playback update:', err);
-      });
+      channelRef.current
+        .publish("playback:update", data)
+        .then(() => {
+          console.log(
+            "[SYNC_DEBUG] Creator successfully published playback update",
+            { playbackTime, isPlaying },
+          );
+        })
+        .catch((err) => {
+          console.error("[SYNC_DEBUG] Error publishing playback update:", err);
+        });
     },
-    [isCreator, isConnected, roomId] // Added roomId to dependencies since it's used in the callback
+    [isCreator, isConnected, roomId], // Added roomId to dependencies since it's used in the callback
   );
 
   // Publish stream change
@@ -459,11 +586,11 @@ export const useRoomAbly = ({
         return;
       }
 
-      channelRef.current.publish('stream:change', { streamId }).catch((err) => {
-        console.error('Error publishing stream change:', err);
+      channelRef.current.publish("stream:change", { streamId }).catch((err) => {
+        console.error("Error publishing stream change:", err);
       });
     },
-    [isConnected]
+    [isConnected],
   );
 
   // Publish reaction
@@ -473,11 +600,11 @@ export const useRoomAbly = ({
         return;
       }
 
-      channelRef.current.publish('reaction', { emoji, userId }).catch((err) => {
-        console.error('Error publishing reaction:', err);
+      channelRef.current.publish("reaction", { emoji, userId }).catch((err) => {
+        console.error("Error publishing reaction:", err);
       });
     },
-    [isConnected]
+    [isConnected],
   );
 
   // Publish skip update
@@ -487,11 +614,41 @@ export const useRoomAbly = ({
         return;
       }
 
-      channelRef.current.publish('skip:update', data).catch((err) => {
-        console.error('Error publishing skip update:', err);
+      channelRef.current.publish("skip:update", data).catch((err) => {
+        console.error("Error publishing skip update:", err);
       });
     },
-    [isConnected]
+    [isConnected],
+  );
+
+  // Publish message
+  const publishMessage = useCallback(
+    (message: any) => {
+      if (!channelRef.current || !isConnected) {
+        return;
+      }
+
+      channelRef.current.publish("message", message).catch((err) => {
+        console.error("Error publishing message:", err);
+      });
+    },
+    [isConnected],
+  );
+
+  // Publish voice event
+  const publishVoiceEvent = useCallback(
+    (type: string, audioData?: string) => {
+      if (!channelRef.current || !isConnected) {
+        return;
+      }
+
+      channelRef.current
+        .publish("voice:start", { type, audioData })
+        .catch((err) => {
+          console.error("Error publishing voice event:", err);
+        });
+    },
+    [isConnected],
   );
 
   return {
@@ -500,7 +657,7 @@ export const useRoomAbly = ({
     publishStreamChange,
     publishReaction,
     publishSkipUpdate,
+    publishMessage,
+    publishVoiceEvent,
   };
 };
-
-

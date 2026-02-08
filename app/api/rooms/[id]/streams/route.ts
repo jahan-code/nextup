@@ -1,18 +1,24 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser, requireRoomMembership } from "@/src/lib/api/auth/auth-shield";
+import {
+  getAuthenticatedUser,
+  requireRoomMembership,
+} from "@/src/lib/api/auth/auth-shield";
 import { validateParams, validateRequest } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { BusinessLogicError, NotFoundError } from "@/src/lib/api/errors/customErrors";
+import {
+  BusinessLogicError,
+  NotFoundError,
+} from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
 import { AddStreamSchema } from "@/src/validation/rooms";
 import getYouTubeId from "get-youtube-id";
-import { StreamType } from "@/app/generated/prisma-v3";
+import { StreamType } from "@/src/types/streams";
 import { YouTubeService } from "@/src/features/youtube";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -56,10 +62,13 @@ export async function POST(
           metadata = {
             title: details.title,
             smallImg: details.thumbnail,
-            bigImg: details.thumbnail
+            bigImg: details.thumbnail,
           };
         } catch (err) {
-          console.warn(`[API] Failed to fetch metadata for ${extractedId}:`, err);
+          console.warn(
+            `[API] Failed to fetch metadata for ${extractedId}:`,
+            err,
+          );
         }
 
         stream = await prismaClient.stream.create({
@@ -76,7 +85,9 @@ export async function POST(
       } else if (!stream.title || !stream.smallImg) {
         // Update missing metadata for existing stream
         try {
-          console.log(`[API] Updating missing metadata for existing stream: ${extractedId}`);
+          console.log(
+            `[API] Updating missing metadata for existing stream: ${extractedId}`,
+          );
           const details = await YouTubeService.getVideoDetails(extractedId);
           stream = await prismaClient.stream.update({
             where: { id: stream.id },
@@ -84,16 +95,22 @@ export async function POST(
               title: stream.title || details.title,
               smallImg: stream.smallImg || details.thumbnail,
               bigImg: stream.bigImg || details.thumbnail,
-            }
+            },
           });
         } catch (err) {
-          console.warn(`[API] Failed to update metadata for existing stream ${extractedId}:`, err);
+          console.warn(
+            `[API] Failed to update metadata for existing stream ${extractedId}:`,
+            err,
+          );
         }
       }
     }
 
     if (!stream || !extractedId) {
-      throw new BusinessLogicError(ErrorCode.INVALID_OPERATION, "Failed to process stream");
+      throw new BusinessLogicError(
+        ErrorCode.INVALID_OPERATION,
+        "Failed to process stream",
+      );
     }
 
     const existingRoomStream = await prismaClient.roomStream.findUnique({
@@ -106,7 +123,10 @@ export async function POST(
     });
 
     if (existingRoomStream) {
-      throw new BusinessLogicError(ErrorCode.ALREADY_EXISTS, "Stream already in room");
+      throw new BusinessLogicError(
+        ErrorCode.ALREADY_EXISTS,
+        "Stream already in room",
+      );
     }
 
     const maxOrder = await prismaClient.roomStream.findFirst({
@@ -124,8 +144,8 @@ export async function POST(
         upvotes: {
           create: {
             userId: user.id,
-          }
-        }
+          },
+        },
       },
       include: {
         stream: {
@@ -151,10 +171,10 @@ export async function POST(
               select: {
                 id: true,
                 email: true,
-                image: true
-              }
-            }
-          }
+                image: true,
+              },
+            },
+          },
         },
         _count: {
           select: {
@@ -169,7 +189,7 @@ export async function POST(
         ...roomStream,
         upvoteCount: roomStream._count.upvotes,
       },
-      201
+      201,
     );
   } catch (error) {
     return handleApiError(error, "POST /api/rooms/[id]/streams");

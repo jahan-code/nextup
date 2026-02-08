@@ -7,7 +7,8 @@ html {
 
 /* Custom animations and utilities */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -16,7 +17,8 @@ html {
 }
 
 @keyframes float-reverse {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(-20px);
   }
   50% {
@@ -25,7 +27,8 @@ html {
 }
 
 @keyframes glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     box-shadow: 0 0 20px rgba(75, 85, 99, 0.3);
   }
@@ -48,7 +51,8 @@ html {
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(1);
   }
@@ -194,7 +198,8 @@ html {
 }
 
 /* Smooth transitions for all interactive elements */
-a, button {
+a,
+button {
   transition: all 0.3s ease;
 }
 
@@ -229,3 +234,105 @@ a, button {
 }
 
 /* 3D transform-style applied only where needed (e.g. .transform-3d, Card3D) */
+
+/* Mobile-specific utilities */
+/* iOS Safari responsive fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific styles */
+  .mobile-input-fix {
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+}
+
+/* Mobile touch targets (minimum 44px for iOS guidelines) */
+.mobile-touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile-safe spacing */
+.mobile-safe-padding {
+  padding: 12px 16px;
+}
+
+/* Mobile viewport fixes */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+  maximum-scale: 1;
+}
+
+/* Prevent horizontal scroll on mobile */
+.mobile-overflow-hidden {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile-friendly scrolling */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Mobile input focus states */
+.mobile-input-focus:focus {
+  outline: 2px solid #6b7280;
+  outline-offset: 2px;
+  -webkit-appearance: none;
+}
+
+/* Mobile button states */
+.mobile-button {
+  min-height: 44px;
+  padding: 12px 16px;
+  font-size: 16px; /* Prevent zoom on iOS */
+  border-radius: 12px;
+}
+
+/* Mobile grid fixes */
+.mobile-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+/* Mobile flex fixes */
+.mobile-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Responsive text sizing */
+.mobile-text {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Small mobile adjustments */
+@media (max-width: 380px) {
+  .mobile-small-padding {
+    padding: 8px 12px;
+  }
+
+  .mobile-small-text {
+    font-size: 14px;
+  }
+
+  .mobile-small-gap {
+    gap: 8px;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .mobile-landscape {
+    padding: 8px 12px;
+  }
+
+  .mobile-landscape-input {
+    min-height: 36px;
+    padding: 8px 12px;
+  }
+}

@@ -3,7 +3,12 @@
  * This file replaces RoomsService to resolve persistent Turbopack parsing errors.
  */
 import { prismaClient } from "@/src/lib/db-v3";
-import { RoomMemberRole } from "@/app/generated/prisma-v3";
+import {
+  RoomMemberRole,
+  type Room,
+  type RoomMember,
+  type User,
+} from "@/src/types/rooms";
 import { CreateRoomSchema, type CreateRoomInput } from "@/src/validation/rooms";
 import type { RoomWithDetails, RoomListResponse } from "@/src/types/rooms";
 import { NotFoundError } from "@/src/lib/api/errors/customErrors";
@@ -15,7 +20,7 @@ export class RoomPortal {
    */
   static async createRoom(
     userId: string,
-    data: CreateRoomInput
+    data: CreateRoomInput,
   ): Promise<RoomWithDetails> {
     const validatedData = CreateRoomSchema.parse(data);
 
@@ -75,7 +80,9 @@ export class RoomPortal {
   /**
    * Get list of rooms (optionally filtered to public only)
    */
-  static async getRooms(publicOnly: boolean = false): Promise<RoomListResponse> {
+  static async getRooms(
+    publicOnly: boolean = false,
+  ): Promise<RoomListResponse> {
     const where = publicOnly ? { isPublic: true } : {};
 
     const rooms = await prismaClient.room.findMany({

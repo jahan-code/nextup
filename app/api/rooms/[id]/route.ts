@@ -3,14 +3,17 @@ import { prismaClient } from "@/src/lib/db-v3";
 import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { validateParams, validateRequest } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { AuthorizationError, NotFoundError } from "@/src/lib/api/errors/customErrors";
+import {
+  AuthorizationError,
+  NotFoundError,
+} from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
 import { RoomPortal } from "@/src/features/rooms/services/room-portal.service";
 import { CreateRoomSchema } from "@/src/validation/rooms";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const { id: roomId } = await validateParams(params, ["id"]);
@@ -68,10 +71,7 @@ export async function GET(
               },
             },
           },
-          orderBy: [
-            { order: "asc" },
-            { addedAt: "asc" },
-          ],
+          orderBy: [{ order: "asc" }, { addedAt: "asc" }],
         },
         currentStream: {
           include: {
@@ -103,7 +103,7 @@ export async function GET(
     // Transform streams to include upvote count
     const roomWithCounts = {
       ...room,
-      streams: room.streams.map((rs) => ({
+      streams: room.streams.map((rs: any) => ({
         ...rs,
         upvoteCount: rs._count.upvotes,
       })),
@@ -120,7 +120,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -150,7 +150,9 @@ export async function PUT(
       where: { id: roomId },
       data: {
         ...(body.name !== undefined && { name: body.name }),
-        ...(body.description !== undefined && { description: body.description }),
+        ...(body.description !== undefined && {
+          description: body.description,
+        }),
         ...(body.isPublic !== undefined && { isPublic: body.isPublic }),
       },
       include: {
@@ -192,7 +194,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -226,4 +228,3 @@ export async function DELETE(
     return handleApiError(error, "DELETE /api/rooms/[id]");
   }
 }
-

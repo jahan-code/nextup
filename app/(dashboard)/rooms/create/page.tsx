@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Appbar, useToast } from '@/src/components';
-import { Loader2, Lock, Globe, Search, X, Play, Video } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { z } from 'zod';
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Appbar, useToast } from "@/src/components";
+import { Loader2, Lock, Globe, Search, X, Play, Video } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { z } from "zod";
 
 const CreateRoomSchema = z.object({
-  name: z.string().min(1, 'Room name is required').max(100, 'Room name must be less than 100 characters'),
-  description: z.string().max(500, 'Description must be less than 500 characters').optional(),
+  name: z
+    .string()
+    .min(1, "Room name is required")
+    .max(100, "Room name must be less than 100 characters"),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
   isPublic: z.boolean().default(true),
 });
 
@@ -31,15 +37,17 @@ export default function CreateRoomPage() {
   const { addToast } = useToast();
 
   const [formData, setFormData] = useState<CreateRoomInput>({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     isPublic: true,
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof CreateRoomInput, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CreateRoomInput, string>>
+  >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdRoomId, setCreatedRoomId] = useState<string | null>(null);
   const [showStreamSelection, setShowStreamSelection] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Video[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingStream, setIsAddingStream] = useState(false);
@@ -47,18 +55,20 @@ export default function CreateRoomPage() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
+    if (status === "unauthenticated") {
+      router.push("/login");
     }
   }, [status, router]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     // Clear error for this field
@@ -79,29 +89,29 @@ export default function CreateRoomPage() {
       const validatedData = CreateRoomSchema.parse(formData);
       setIsSubmitting(true);
 
-      const response = await fetch('/api/rooms', {
-        method: 'POST',
+      const response = await fetch("/api/rooms", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(validatedData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to create room');
+        throw new Error(data.error || data.message || "Failed to create room");
       }
 
       // Handle both direct response and wrapped response formats
       const room = data.data || data;
       if (!room || !room.id) {
-        throw new Error('Invalid response from server');
+        throw new Error("Invalid response from server");
       }
 
       setCreatedRoomId(room.id);
-      addToast('Room created successfully!', 'success');
+      addToast("Room created successfully!", "success");
       setShowStreamSelection(true);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -113,7 +123,10 @@ export default function CreateRoomPage() {
         });
         setErrors(fieldErrors);
       } else {
-        addToast(err instanceof Error ? err.message : 'Failed to create room', 'error');
+        addToast(
+          err instanceof Error ? err.message : "Failed to create room",
+          "error",
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -126,26 +139,31 @@ export default function CreateRoomPage() {
 
     try {
       setIsSearching(true);
-      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(searchQuery)}`, {
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `/api/youtube/search?q=${encodeURIComponent(searchQuery)}`,
+        {
+          credentials: "include",
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to search videos');
+        throw new Error("Failed to search videos");
       }
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to search videos');
+        throw new Error(
+          data.error || data.message || "Failed to search videos",
+        );
       }
 
       // Handle both direct response and wrapped response formats
       const result = data.data || data;
       setSearchResults(result?.videos || []);
     } catch (err) {
-      console.error('Error searching videos:', err);
-      addToast('Failed to search videos', 'error');
+      console.error("Error searching videos:", err);
+      addToast("Failed to search videos", "error");
     } finally {
       setIsSearching(false);
     }
@@ -158,73 +176,77 @@ export default function CreateRoomPage() {
       setAddingVideoId(video.id);
       setIsAddingStream(true);
 
-      // First, create the stream
-      const streamResponse = await fetch('/api/streams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          url: video.url,
-          title: video.title,
-        }),
-      });
+      // Debug logging
+      console.log("Adding stream with video:", video);
+      console.log("Video URL:", video.url);
 
-      const streamData = await streamResponse.json();
-
-      if (!streamResponse.ok) {
-        throw new Error(streamData.error || streamData.message || 'Failed to create stream');
+      if (!video.url) {
+        throw new Error("Video URL is missing");
       }
 
-      // Handle both direct response and wrapped response formats
-      const stream = streamData.data || streamData;
-      if (!stream || !stream.id) {
-        throw new Error('Invalid stream response from server');
-      }
-
-      // Then, add it to the room
-      const roomStreamResponse = await fetch(`/api/rooms/${createdRoomId}/streams`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Add the stream directly to the room using the URL
+      const roomStreamResponse = await fetch(
+        `/api/rooms/${createdRoomId}/streams`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            url: video.url,
+          }),
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          streamId: stream.id,
-        }),
-      });
+      );
+
+      console.log("Room stream response status:", roomStreamResponse.status);
 
       if (!roomStreamResponse.ok) {
-        throw new Error('Failed to add stream to room');
+        const errorData = await roomStreamResponse.text();
+        console.error("Room stream error response:", errorData);
+        throw new Error(`Failed to add stream to room: ${errorData}`);
       }
 
       const roomStreamData = await roomStreamResponse.json();
+      console.log("Room stream data:", roomStreamData);
       const roomStream = roomStreamData.data || roomStreamData;
       // The API expects Stream.id (not RoomStream.id) for the play endpoint
-      const streamId = roomStream.stream?.id || roomStream.streamId;
+      const streamId = roomStream.stream?.id;
+
+      console.log("Extracted stream ID:", streamId);
 
       // Set the stream as current
       if (streamId) {
-        const playResponse = await fetch(`/api/rooms/${createdRoomId}/streams/${streamId}/play`, {
-          method: 'PUT',
-          credentials: 'include',
-        });
+        const playResponse = await fetch(
+          `/api/rooms/${createdRoomId}/streams/${streamId}/play`,
+          {
+            method: "PUT",
+            credentials: "include",
+          },
+        );
+
+        console.log("Play response status:", playResponse.status);
 
         if (!playResponse.ok) {
-          console.warn('Failed to set stream as current, but stream was added');
+          const playError = await playResponse.text();
+          console.warn("Failed to set stream as current:", playError);
         }
+      } else {
+        console.warn("No stream ID found in room stream response");
       }
 
-      addToast('Stream added and set as current!', 'success');
+      addToast("Stream added and set as current!", "success");
 
       // Redirect to the room page
       setTimeout(() => {
         router.push(`/rooms/${createdRoomId}`);
       }, 500);
     } catch (err) {
-      console.error('Error adding stream:', err);
-      addToast(err instanceof Error ? err.message : 'Failed to add stream', 'error');
+      console.error("Error adding stream:", err);
+      addToast(
+        err instanceof Error ? err.message : "Failed to add stream",
+        "error",
+      );
     } finally {
       setIsAddingStream(false);
       setAddingVideoId(null);
@@ -237,7 +259,7 @@ export default function CreateRoomPage() {
     }
   };
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <Loader2 className="text-gray-400 animate-spin" size={48} />
@@ -255,7 +277,7 @@ export default function CreateRoomPage() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-2xl mx-auto"
         >
-          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl sm:text-5xl font-bold bg-linear-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent mb-3">
             Create Watch Party Room
           </h1>
           <p className="text-gray-400 text-lg mb-8">
@@ -272,7 +294,10 @@ export default function CreateRoomPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Room Name */}
                 <div>
-                  <label htmlFor="name" className="block text-gray-300 font-semibold mb-2">
+                  <label
+                    htmlFor="name"
+                    className="block text-gray-300 font-semibold mb-2"
+                  >
                     Room Name <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -292,7 +317,10 @@ export default function CreateRoomPage() {
 
                 {/* Description */}
                 <div>
-                  <label htmlFor="description" className="block text-gray-300 font-semibold mb-2">
+                  <label
+                    htmlFor="description"
+                    className="block text-gray-300 font-semibold mb-2"
+                  >
                     Description (Optional)
                   </label>
                   <textarea
@@ -306,7 +334,9 @@ export default function CreateRoomPage() {
                     disabled={isSubmitting}
                   />
                   {errors.description && (
-                    <p className="mt-1 text-sm text-red-400">{errors.description}</p>
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.description}
+                    </p>
                   )}
                 </div>
 
@@ -322,15 +352,24 @@ export default function CreateRoomPage() {
                         name="isPublic"
                         value="true"
                         checked={formData.isPublic === true}
-                        onChange={() => setFormData((prev) => ({ ...prev, isPublic: true }))}
+                        onChange={() =>
+                          setFormData((prev) => ({ ...prev, isPublic: true }))
+                        }
                         disabled={isSubmitting}
                         className="sr-only"
                       />
-                      <div className={`flex-1 flex items-center gap-3 ${formData.isPublic ? 'text-white' : 'text-gray-400'}`}>
-                        <Globe size={20} className={formData.isPublic ? 'text-gray-400' : ''} />
+                      <div
+                        className={`flex-1 flex items-center gap-3 ${formData.isPublic ? "text-white" : "text-gray-400"}`}
+                      >
+                        <Globe
+                          size={20}
+                          className={formData.isPublic ? "text-gray-400" : ""}
+                        />
                         <div>
                           <div className="font-medium">Public Room</div>
-                          <div className="text-sm">Anyone can find and join this room</div>
+                          <div className="text-sm">
+                            Anyone can find and join this room
+                          </div>
                         </div>
                       </div>
                       {formData.isPublic && (
@@ -344,15 +383,24 @@ export default function CreateRoomPage() {
                         name="isPublic"
                         value="false"
                         checked={formData.isPublic === false}
-                        onChange={() => setFormData((prev) => ({ ...prev, isPublic: false }))}
+                        onChange={() =>
+                          setFormData((prev) => ({ ...prev, isPublic: false }))
+                        }
                         disabled={isSubmitting}
                         className="sr-only"
                       />
-                      <div className={`flex-1 flex items-center gap-3 ${!formData.isPublic ? 'text-white' : 'text-gray-400'}`}>
-                        <Lock size={20} className={!formData.isPublic ? 'text-gray-500' : ''} />
+                      <div
+                        className={`flex-1 flex items-center gap-3 ${!formData.isPublic ? "text-white" : "text-gray-400"}`}
+                      >
+                        <Lock
+                          size={20}
+                          className={!formData.isPublic ? "text-gray-500" : ""}
+                        />
                         <div>
                           <div className="font-medium">Private Room</div>
-                          <div className="text-sm">Only people with the room link can join</div>
+                          <div className="text-sm">
+                            Only people with the room link can join
+                          </div>
                         </div>
                       </div>
                       {!formData.isPublic && (
@@ -422,7 +470,8 @@ export default function CreateRoomPage() {
                           Add Your First Stream
                         </h2>
                         <p className="text-gray-400">
-                          Search for a YouTube video to add to your room (optional)
+                          Search for a YouTube video to add to your room
+                          (optional)
                         </p>
                       </div>
                       <button
@@ -437,27 +486,41 @@ export default function CreateRoomPage() {
                     <form onSubmit={handleSearch} className="mb-6">
                       <div className="flex gap-3">
                         <div className="flex-1 relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                          <Search
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                            size={20}
+                          />
                           <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search YouTube videos..."
-                            className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 transition-colors"
+                            className="w-full pl-12 pr-12 py-4 min-h-[44px] bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-gray-500/50 transition-colors"
                             disabled={isSearching}
                           />
+                          {searchQuery && (
+                            <button
+                              onClick={() => {
+                                setSearchQuery("");
+                                setSearchResults([]);
+                              }}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
                         </div>
                         <button
                           type="submit"
                           disabled={isSearching || !searchQuery.trim()}
-                          className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                          className="px-6 py-4 min-h-[44px] bg-gray-600 text-white rounded-xl hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
                         >
                           {isSearching ? (
                             <Loader2 className="animate-spin" size={20} />
                           ) : (
                             <Search size={20} />
                           )}
-                          Search
+                          <span className="hidden sm:inline">Search</span>
                         </button>
                       </div>
                     </form>
@@ -476,16 +539,19 @@ export default function CreateRoomPage() {
                             <img
                               src={video.thumbnail}
                               alt={video.title}
-                              className="w-32 h-20 object-cover rounded flex-shrink-0"
+                              className="w-32 h-20 object-cover rounded shrink-0"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/128x80?text=No+Image';
+                                (e.target as HTMLImageElement).src =
+                                  "https://via.placeholder.com/128x80?text=No+Image";
                               }}
                             />
                             <div className="flex-1 min-w-0">
                               <h4 className="text-white font-medium text-sm line-clamp-2 group-hover:text-gray-400 transition-colors">
                                 {video.title}
                               </h4>
-                              <p className="text-gray-400 text-xs mt-1">{video.channelTitle}</p>
+                              <p className="text-gray-400 text-xs mt-1">
+                                {video.channelTitle}
+                              </p>
                             </div>
                             <button
                               onClick={(e) => {
@@ -493,7 +559,7 @@ export default function CreateRoomPage() {
                                 handleSelectStream(video);
                               }}
                               disabled={isAddingStream}
-                              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold flex-shrink-0"
+                              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold shrink-0"
                             >
                               {isAddingStream && addingVideoId === video.id ? (
                                 <Loader2 className="animate-spin" size={16} />

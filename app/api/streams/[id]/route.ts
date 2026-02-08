@@ -3,7 +3,10 @@ import { prismaClient } from "@/src/lib";
 import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { validateParams, validateRequest } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { AuthorizationError, NotFoundError } from "@/src/lib/api/errors/customErrors";
+import {
+  AuthorizationError,
+  NotFoundError,
+} from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
 import { z } from "zod";
 
@@ -13,7 +16,7 @@ const UpdateStreamSchema = z.object({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -35,7 +38,10 @@ export async function PUT(
 
     // Verify creator ownership
     if (stream.UserId !== user.id) {
-      throw new AuthorizationError(ErrorCode.INSUFFICIENT_PERMISSIONS, "Only the creator can edit this stream");
+      throw new AuthorizationError(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Only the creator can edit this stream",
+      );
     }
 
     // Update stream
@@ -54,7 +60,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -75,7 +81,10 @@ export async function DELETE(
 
     // Verify creator ownership
     if (stream.UserId !== user.id) {
-      throw new AuthorizationError(ErrorCode.INSUFFICIENT_PERMISSIONS, "Only the creator can delete this stream");
+      throw new AuthorizationError(
+        ErrorCode.INSUFFICIENT_PERMISSIONS,
+        "Only the creator can delete this stream",
+      );
     }
 
     // Check if stream is used in any rooms
@@ -93,14 +102,14 @@ export async function DELETE(
 
     // Update rooms that have this stream as current stream
     const roomsToUpdate = roomStreams.filter(
-      (rs) => rs.room.currentStreamId === rs.id
+      (rs: any) => rs.room.currentStreamId === rs.id,
     );
 
     if (roomsToUpdate.length > 0) {
       await prismaClient.room.updateMany({
         where: {
           id: {
-            in: roomsToUpdate.map((rs) => rs.room.id),
+            in: roomsToUpdate.map((rs: any) => rs.room.id),
           },
         },
         data: {

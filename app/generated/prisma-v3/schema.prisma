@@ -22,6 +22,8 @@ model User {
   skipVotes         SkipVote[]
   Streams           Stream[]
   upvotes           Upvote[]
+  Messages          Message[]
+  VoiceEvents       VoiceEvent[]
 }
 
 model Stream {
@@ -37,6 +39,8 @@ model Stream {
   roomStreams RoomStream[]
   user        User         @relation(fields: [UserId], references: [id])
   upvotes     Upvote[]
+
+  @@index([active])
 }
 
 model Upvote {
@@ -66,6 +70,8 @@ model Room {
   members         RoomMember[]
   streams         RoomStream[] @relation("RoomStreams")
 
+  @@index([isPublic, createdAt])
+  @@index([creatorId, createdAt])
   @@index([isPublic])
   @@index([creatorId])
 }
@@ -142,4 +148,32 @@ enum Provider {
 enum RoomMemberRole {
   CREATOR
   MEMBER
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  type      String   @default("text")
+  userId    String
+  userName  String?
+  userImage String?
+  roomId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([roomId])
+  @@index([createdAt])
+}
+
+model VoiceEvent {
+  id        String   @id @default(uuid())
+  type      String
+  userId    String
+  roomId    String
+  audioData String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([roomId])
+  @@index([createdAt])
 }

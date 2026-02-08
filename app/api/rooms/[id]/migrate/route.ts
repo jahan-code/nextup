@@ -3,13 +3,16 @@ import { prismaClient } from "@/src/lib";
 import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { validateParams } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { BusinessLogicError, NotFoundError } from "@/src/lib/api/errors/customErrors";
+import {
+  BusinessLogicError,
+  NotFoundError,
+} from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
-import { RoomMemberRole } from "@/app/generated/prisma-v3";
+import { RoomMemberRole } from "@/src/types/rooms";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -30,19 +33,22 @@ export async function POST(
     }
 
     // 2. Check if the requester is a member
-    const requesterMember = room.members.find(m => m.userId === user.id);
+    const requesterMember = room.members.find((m: any) => m.userId === user.id);
     if (!requesterMember) {
       throw new BusinessLogicError(ErrorCode.NOT_ROOM_MEMBER);
     }
 
     // 3. If requester is already creator, nothing to do
     if (room.creatorId === user.id) {
-      return successResponse({ message: "Already creator", currentCreatorId: room.creatorId });
+      return successResponse({
+        message: "Already creator",
+        currentCreatorId: room.creatorId,
+      });
     }
 
     // 4. Atomically transfer creator role
     // We promote the requester to creator and demote the old one
-    await prismaClient.$transaction(async (tx) => {
+    await prismaClient.$transaction(async (tx: any) => {
       // Update room creator
       await tx.room.update({
         where: { id: roomId },
@@ -63,20 +69,20 @@ export async function POST(
     });
 
     // 5. Broadcast the transfer via Ably
-    const Ably = (await import('ably')).Realtime;
+    const Ably = (await import("ably")).Realtime;
     const apiKey = process.env.NEXT_PUBLIC_ABLY_API_KEY;
     if (apiKey) {
       const ably = new Ably({ key: apiKey });
       const channel = ably.channels.get(`room:${roomId}`);
 
-      await channel.publish('creator:transferred', {
+      await channel.publish("creator:transferred", {
         oldCreatorId: room.creatorId,
         newCreatorId: user.id,
         newCreator: {
           id: user.id,
           email: user.email,
-          image: user.image
-        }
+          image: user.image,
+        },
       });
 
       ably.close();
@@ -84,7 +90,7 @@ export async function POST(
 
     return successResponse({
       message: "Creator role transferred successfully",
-      newCreatorId: user.id
+      newCreatorId: user.id,
     });
   } catch (error) {
     return handleApiError(error, "POST /api/rooms/[id]/migrate");

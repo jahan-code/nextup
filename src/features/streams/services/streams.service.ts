@@ -1,15 +1,24 @@
 import { prismaClient } from "@/src/lib";
-import { StreamType } from "@/app/generated/prisma-v3";
+import {
+  StreamType,
+  type Stream,
+  type Upvote,
+  type User,
+} from "@/src/types/streams";
 import getYouTubeId from "get-youtube-id";
-import { CreateStreamSchema, type CreateStreamInput } from "@/src/validation/streams";
-import type { StreamWithUpvotes, StreamListResponse } from "@/src/types/streams";
+import {
+  CreateStreamSchema,
+  type CreateStreamInput,
+} from "@/src/validation/streams";
+import type {
+  StreamWithUpvotes,
+  StreamListResponse,
+} from "@/src/types/streams";
 import {
   BusinessLogicError,
   NotFoundError,
 } from "@/src/lib/api/errors/customErrors";
-import {
-  ErrorCode,
-} from "@/src/lib/api/errorConstants";
+import { ErrorCode } from "@/src/lib/api/errorConstants";
 
 export class StreamsService {
   /**
@@ -51,7 +60,9 @@ export class StreamsService {
   /**
    * Get list of active streams with upvote counts
    */
-  static async getStreams(sort: "mostUpvoted" | "newest" = "mostUpvoted"): Promise<StreamListResponse> {
+  static async getStreams(
+    sort: "mostUpvoted" | "newest" = "mostUpvoted",
+  ): Promise<StreamListResponse> {
     // Fetch all active streams with upvotes and user info
     const streams = await prismaClient.stream.findMany({
       where: {
@@ -69,10 +80,12 @@ export class StreamsService {
     });
 
     // Transform streams to include upvote count
-    const streamsWithCounts: StreamWithUpvotes[] = streams.map((stream) => ({
-      ...stream,
-      upvoteCount: stream.upvotes.length,
-    }));
+    const streamsWithCounts: StreamWithUpvotes[] = streams.map(
+      (stream: any) => ({
+        ...stream,
+        upvoteCount: stream.upvotes.length,
+      }),
+    );
 
     // Sort streams
     if (sort === "mostUpvoted") {
@@ -85,4 +98,3 @@ export class StreamsService {
     return { streams: streamsWithCounts };
   }
 }
-

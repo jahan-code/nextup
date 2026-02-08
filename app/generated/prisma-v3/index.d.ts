@@ -53,6 +53,16 @@ export type RoomStreamUpvote = $Result.DefaultSelection<Prisma.$RoomStreamUpvote
  * 
  */
 export type SkipVote = $Result.DefaultSelection<Prisma.$SkipVotePayload>
+/**
+ * Model Message
+ * 
+ */
+export type Message = $Result.DefaultSelection<Prisma.$MessagePayload>
+/**
+ * Model VoiceEvent
+ * 
+ */
+export type VoiceEvent = $Result.DefaultSelection<Prisma.$VoiceEventPayload>
 
 /**
  * Enums
@@ -292,6 +302,26 @@ export class PrismaClient<
     * ```
     */
   get skipVote(): Prisma.SkipVoteDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.message`: Exposes CRUD operations for the **Message** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Messages
+    * const messages = await prisma.message.findMany()
+    * ```
+    */
+  get message(): Prisma.MessageDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.voiceEvent`: Exposes CRUD operations for the **VoiceEvent** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VoiceEvents
+    * const voiceEvents = await prisma.voiceEvent.findMany()
+    * ```
+    */
+  get voiceEvent(): Prisma.VoiceEventDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -740,7 +770,9 @@ export namespace Prisma {
     RoomMember: 'RoomMember',
     RoomStream: 'RoomStream',
     RoomStreamUpvote: 'RoomStreamUpvote',
-    SkipVote: 'SkipVote'
+    SkipVote: 'SkipVote',
+    Message: 'Message',
+    VoiceEvent: 'VoiceEvent'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -759,7 +791,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "stream" | "upvote" | "room" | "roomMember" | "roomStream" | "roomStreamUpvote" | "skipVote"
+      modelProps: "user" | "stream" | "upvote" | "room" | "roomMember" | "roomStream" | "roomStreamUpvote" | "skipVote" | "message" | "voiceEvent"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1355,6 +1387,154 @@ export namespace Prisma {
           }
         }
       }
+      Message: {
+        payload: Prisma.$MessagePayload<ExtArgs>
+        fields: Prisma.MessageFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.MessageFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.MessageFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          findFirst: {
+            args: Prisma.MessageFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.MessageFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          findMany: {
+            args: Prisma.MessageFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
+          }
+          create: {
+            args: Prisma.MessageCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          createMany: {
+            args: Prisma.MessageCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.MessageCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
+          }
+          delete: {
+            args: Prisma.MessageDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          update: {
+            args: Prisma.MessageUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          deleteMany: {
+            args: Prisma.MessageDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.MessageUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.MessageUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
+          }
+          upsert: {
+            args: Prisma.MessageUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          aggregate: {
+            args: Prisma.MessageAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMessage>
+          }
+          groupBy: {
+            args: Prisma.MessageGroupByArgs<ExtArgs>
+            result: $Utils.Optional<MessageGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.MessageCountArgs<ExtArgs>
+            result: $Utils.Optional<MessageCountAggregateOutputType> | number
+          }
+        }
+      }
+      VoiceEvent: {
+        payload: Prisma.$VoiceEventPayload<ExtArgs>
+        fields: Prisma.VoiceEventFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VoiceEventFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VoiceEventFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>
+          }
+          findFirst: {
+            args: Prisma.VoiceEventFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VoiceEventFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>
+          }
+          findMany: {
+            args: Prisma.VoiceEventFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>[]
+          }
+          create: {
+            args: Prisma.VoiceEventCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>
+          }
+          createMany: {
+            args: Prisma.VoiceEventCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VoiceEventCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>[]
+          }
+          delete: {
+            args: Prisma.VoiceEventDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>
+          }
+          update: {
+            args: Prisma.VoiceEventUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>
+          }
+          deleteMany: {
+            args: Prisma.VoiceEventDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VoiceEventUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.VoiceEventUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>[]
+          }
+          upsert: {
+            args: Prisma.VoiceEventUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoiceEventPayload>
+          }
+          aggregate: {
+            args: Prisma.VoiceEventAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVoiceEvent>
+          }
+          groupBy: {
+            args: Prisma.VoiceEventGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VoiceEventGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VoiceEventCountArgs<ExtArgs>
+            result: $Utils.Optional<VoiceEventCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1459,6 +1639,8 @@ export namespace Prisma {
     roomStream?: RoomStreamOmit
     roomStreamUpvote?: RoomStreamUpvoteOmit
     skipVote?: SkipVoteOmit
+    message?: MessageOmit
+    voiceEvent?: VoiceEventOmit
   }
 
   /* Types for Logging */
@@ -1546,6 +1728,8 @@ export namespace Prisma {
     skipVotes: number
     Streams: number
     upvotes: number
+    Messages: number
+    VoiceEvents: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1556,6 +1740,8 @@ export namespace Prisma {
     skipVotes?: boolean | UserCountOutputTypeCountSkipVotesArgs
     Streams?: boolean | UserCountOutputTypeCountStreamsArgs
     upvotes?: boolean | UserCountOutputTypeCountUpvotesArgs
+    Messages?: boolean | UserCountOutputTypeCountMessagesArgs
+    VoiceEvents?: boolean | UserCountOutputTypeCountVoiceEventsArgs
   }
 
   // Custom InputTypes
@@ -1616,6 +1802,20 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountUpvotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: UpvoteWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountVoiceEventsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VoiceEventWhereInput
   }
 
 
@@ -1923,6 +2123,8 @@ export namespace Prisma {
     skipVotes?: boolean | User$skipVotesArgs<ExtArgs>
     Streams?: boolean | User$StreamsArgs<ExtArgs>
     upvotes?: boolean | User$upvotesArgs<ExtArgs>
+    Messages?: boolean | User$MessagesArgs<ExtArgs>
+    VoiceEvents?: boolean | User$VoiceEventsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -1959,6 +2161,8 @@ export namespace Prisma {
     skipVotes?: boolean | User$skipVotesArgs<ExtArgs>
     Streams?: boolean | User$StreamsArgs<ExtArgs>
     upvotes?: boolean | User$upvotesArgs<ExtArgs>
+    Messages?: boolean | User$MessagesArgs<ExtArgs>
+    VoiceEvents?: boolean | User$VoiceEventsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -1974,6 +2178,8 @@ export namespace Prisma {
       skipVotes: Prisma.$SkipVotePayload<ExtArgs>[]
       Streams: Prisma.$StreamPayload<ExtArgs>[]
       upvotes: Prisma.$UpvotePayload<ExtArgs>[]
+      Messages: Prisma.$MessagePayload<ExtArgs>[]
+      VoiceEvents: Prisma.$VoiceEventPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2382,6 +2588,8 @@ export namespace Prisma {
     skipVotes<T extends User$skipVotesArgs<ExtArgs> = {}>(args?: Subset<T, User$skipVotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkipVotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     Streams<T extends User$StreamsArgs<ExtArgs> = {}>(args?: Subset<T, User$StreamsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StreamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     upvotes<T extends User$upvotesArgs<ExtArgs> = {}>(args?: Subset<T, User$upvotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UpvotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    Messages<T extends User$MessagesArgs<ExtArgs> = {}>(args?: Subset<T, User$MessagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    VoiceEvents<T extends User$VoiceEventsArgs<ExtArgs> = {}>(args?: Subset<T, User$VoiceEventsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2969,6 +3177,54 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: UpvoteScalarFieldEnum | UpvoteScalarFieldEnum[]
+  }
+
+  /**
+   * User.Messages
+   */
+  export type User$MessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    where?: MessageWhereInput
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    cursor?: MessageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * User.VoiceEvents
+   */
+  export type User$VoiceEventsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    where?: VoiceEventWhereInput
+    orderBy?: VoiceEventOrderByWithRelationInput | VoiceEventOrderByWithRelationInput[]
+    cursor?: VoiceEventWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VoiceEventScalarFieldEnum | VoiceEventScalarFieldEnum[]
   }
 
   /**
@@ -10833,6 +11089,2174 @@ export namespace Prisma {
 
 
   /**
+   * Model Message
+   */
+
+  export type AggregateMessage = {
+    _count: MessageCountAggregateOutputType | null
+    _min: MessageMinAggregateOutputType | null
+    _max: MessageMaxAggregateOutputType | null
+  }
+
+  export type MessageMinAggregateOutputType = {
+    id: string | null
+    content: string | null
+    type: string | null
+    userId: string | null
+    userName: string | null
+    userImage: string | null
+    roomId: string | null
+    createdAt: Date | null
+  }
+
+  export type MessageMaxAggregateOutputType = {
+    id: string | null
+    content: string | null
+    type: string | null
+    userId: string | null
+    userName: string | null
+    userImage: string | null
+    roomId: string | null
+    createdAt: Date | null
+  }
+
+  export type MessageCountAggregateOutputType = {
+    id: number
+    content: number
+    type: number
+    userId: number
+    userName: number
+    userImage: number
+    roomId: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type MessageMinAggregateInputType = {
+    id?: true
+    content?: true
+    type?: true
+    userId?: true
+    userName?: true
+    userImage?: true
+    roomId?: true
+    createdAt?: true
+  }
+
+  export type MessageMaxAggregateInputType = {
+    id?: true
+    content?: true
+    type?: true
+    userId?: true
+    userName?: true
+    userImage?: true
+    roomId?: true
+    createdAt?: true
+  }
+
+  export type MessageCountAggregateInputType = {
+    id?: true
+    content?: true
+    type?: true
+    userId?: true
+    userName?: true
+    userImage?: true
+    roomId?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type MessageAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Message to aggregate.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Messages
+    **/
+    _count?: true | MessageCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: MessageMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: MessageMaxAggregateInputType
+  }
+
+  export type GetMessageAggregateType<T extends MessageAggregateArgs> = {
+        [P in keyof T & keyof AggregateMessage]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMessage[P]>
+      : GetScalarType<T[P], AggregateMessage[P]>
+  }
+
+
+
+
+  export type MessageGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageWhereInput
+    orderBy?: MessageOrderByWithAggregationInput | MessageOrderByWithAggregationInput[]
+    by: MessageScalarFieldEnum[] | MessageScalarFieldEnum
+    having?: MessageScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: MessageCountAggregateInputType | true
+    _min?: MessageMinAggregateInputType
+    _max?: MessageMaxAggregateInputType
+  }
+
+  export type MessageGroupByOutputType = {
+    id: string
+    content: string
+    type: string
+    userId: string
+    userName: string | null
+    userImage: string | null
+    roomId: string
+    createdAt: Date
+    _count: MessageCountAggregateOutputType | null
+    _min: MessageMinAggregateOutputType | null
+    _max: MessageMaxAggregateOutputType | null
+  }
+
+  type GetMessageGroupByPayload<T extends MessageGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MessageGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof MessageGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], MessageGroupByOutputType[P]>
+            : GetScalarType<T[P], MessageGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type MessageSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    content?: boolean
+    type?: boolean
+    userId?: boolean
+    userName?: boolean
+    userImage?: boolean
+    roomId?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["message"]>
+
+  export type MessageSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    content?: boolean
+    type?: boolean
+    userId?: boolean
+    userName?: boolean
+    userImage?: boolean
+    roomId?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["message"]>
+
+  export type MessageSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    content?: boolean
+    type?: boolean
+    userId?: boolean
+    userName?: boolean
+    userImage?: boolean
+    roomId?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["message"]>
+
+  export type MessageSelectScalar = {
+    id?: boolean
+    content?: boolean
+    type?: boolean
+    userId?: boolean
+    userName?: boolean
+    userImage?: boolean
+    roomId?: boolean
+    createdAt?: boolean
+  }
+
+  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "content" | "type" | "userId" | "userName" | "userImage" | "roomId" | "createdAt", ExtArgs["result"]["message"]>
+  export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type MessageIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type MessageIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $MessagePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Message"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      content: string
+      type: string
+      userId: string
+      userName: string | null
+      userImage: string | null
+      roomId: string
+      createdAt: Date
+    }, ExtArgs["result"]["message"]>
+    composites: {}
+  }
+
+  type MessageGetPayload<S extends boolean | null | undefined | MessageDefaultArgs> = $Result.GetResult<Prisma.$MessagePayload, S>
+
+  type MessageCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<MessageFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: MessageCountAggregateInputType | true
+    }
+
+  export interface MessageDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Message'], meta: { name: 'Message' } }
+    /**
+     * Find zero or one Message that matches the filter.
+     * @param {MessageFindUniqueArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MessageFindUniqueArgs>(args: SelectSubset<T, MessageFindUniqueArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Message that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {MessageFindUniqueOrThrowArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MessageFindUniqueOrThrowArgs>(args: SelectSubset<T, MessageFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Message that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageFindFirstArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MessageFindFirstArgs>(args?: SelectSubset<T, MessageFindFirstArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Message that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageFindFirstOrThrowArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MessageFindFirstOrThrowArgs>(args?: SelectSubset<T, MessageFindFirstOrThrowArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Messages that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Messages
+     * const messages = await prisma.message.findMany()
+     * 
+     * // Get first 10 Messages
+     * const messages = await prisma.message.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const messageWithIdOnly = await prisma.message.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends MessageFindManyArgs>(args?: SelectSubset<T, MessageFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Message.
+     * @param {MessageCreateArgs} args - Arguments to create a Message.
+     * @example
+     * // Create one Message
+     * const Message = await prisma.message.create({
+     *   data: {
+     *     // ... data to create a Message
+     *   }
+     * })
+     * 
+     */
+    create<T extends MessageCreateArgs>(args: SelectSubset<T, MessageCreateArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Messages.
+     * @param {MessageCreateManyArgs} args - Arguments to create many Messages.
+     * @example
+     * // Create many Messages
+     * const message = await prisma.message.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends MessageCreateManyArgs>(args?: SelectSubset<T, MessageCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Messages and returns the data saved in the database.
+     * @param {MessageCreateManyAndReturnArgs} args - Arguments to create many Messages.
+     * @example
+     * // Create many Messages
+     * const message = await prisma.message.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Messages and only return the `id`
+     * const messageWithIdOnly = await prisma.message.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends MessageCreateManyAndReturnArgs>(args?: SelectSubset<T, MessageCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Message.
+     * @param {MessageDeleteArgs} args - Arguments to delete one Message.
+     * @example
+     * // Delete one Message
+     * const Message = await prisma.message.delete({
+     *   where: {
+     *     // ... filter to delete one Message
+     *   }
+     * })
+     * 
+     */
+    delete<T extends MessageDeleteArgs>(args: SelectSubset<T, MessageDeleteArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Message.
+     * @param {MessageUpdateArgs} args - Arguments to update one Message.
+     * @example
+     * // Update one Message
+     * const message = await prisma.message.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends MessageUpdateArgs>(args: SelectSubset<T, MessageUpdateArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Messages.
+     * @param {MessageDeleteManyArgs} args - Arguments to filter Messages to delete.
+     * @example
+     * // Delete a few Messages
+     * const { count } = await prisma.message.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends MessageDeleteManyArgs>(args?: SelectSubset<T, MessageDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Messages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Messages
+     * const message = await prisma.message.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends MessageUpdateManyArgs>(args: SelectSubset<T, MessageUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Messages and returns the data updated in the database.
+     * @param {MessageUpdateManyAndReturnArgs} args - Arguments to update many Messages.
+     * @example
+     * // Update many Messages
+     * const message = await prisma.message.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Messages and only return the `id`
+     * const messageWithIdOnly = await prisma.message.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends MessageUpdateManyAndReturnArgs>(args: SelectSubset<T, MessageUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Message.
+     * @param {MessageUpsertArgs} args - Arguments to update or create a Message.
+     * @example
+     * // Update or create a Message
+     * const message = await prisma.message.upsert({
+     *   create: {
+     *     // ... data to create a Message
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Message we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MessageUpsertArgs>(args: SelectSubset<T, MessageUpsertArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Messages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageCountArgs} args - Arguments to filter Messages to count.
+     * @example
+     * // Count the number of Messages
+     * const count = await prisma.message.count({
+     *   where: {
+     *     // ... the filter for the Messages we want to count
+     *   }
+     * })
+    **/
+    count<T extends MessageCountArgs>(
+      args?: Subset<T, MessageCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MessageCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Message.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MessageAggregateArgs>(args: Subset<T, MessageAggregateArgs>): Prisma.PrismaPromise<GetMessageAggregateType<T>>
+
+    /**
+     * Group by Message.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends MessageGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MessageGroupByArgs['orderBy'] }
+        : { orderBy?: MessageGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, MessageGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMessageGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Message model
+   */
+  readonly fields: MessageFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Message.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MessageClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Message model
+   */
+  interface MessageFieldRefs {
+    readonly id: FieldRef<"Message", 'String'>
+    readonly content: FieldRef<"Message", 'String'>
+    readonly type: FieldRef<"Message", 'String'>
+    readonly userId: FieldRef<"Message", 'String'>
+    readonly userName: FieldRef<"Message", 'String'>
+    readonly userImage: FieldRef<"Message", 'String'>
+    readonly roomId: FieldRef<"Message", 'String'>
+    readonly createdAt: FieldRef<"Message", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Message findUnique
+   */
+  export type MessageFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message findUniqueOrThrow
+   */
+  export type MessageFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message findFirst
+   */
+  export type MessageFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Messages.
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Messages.
+     */
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * Message findFirstOrThrow
+   */
+  export type MessageFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Messages.
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Messages.
+     */
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * Message findMany
+   */
+  export type MessageFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Messages to fetch.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Messages.
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * Message create
+   */
+  export type MessageCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Message.
+     */
+    data: XOR<MessageCreateInput, MessageUncheckedCreateInput>
+  }
+
+  /**
+   * Message createMany
+   */
+  export type MessageCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Messages.
+     */
+    data: MessageCreateManyInput | MessageCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Message createManyAndReturn
+   */
+  export type MessageCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * The data used to create many Messages.
+     */
+    data: MessageCreateManyInput | MessageCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Message update
+   */
+  export type MessageUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Message.
+     */
+    data: XOR<MessageUpdateInput, MessageUncheckedUpdateInput>
+    /**
+     * Choose, which Message to update.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message updateMany
+   */
+  export type MessageUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Messages.
+     */
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyInput>
+    /**
+     * Filter which Messages to update
+     */
+    where?: MessageWhereInput
+    /**
+     * Limit how many Messages to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Message updateManyAndReturn
+   */
+  export type MessageUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * The data used to update Messages.
+     */
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyInput>
+    /**
+     * Filter which Messages to update
+     */
+    where?: MessageWhereInput
+    /**
+     * Limit how many Messages to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Message upsert
+   */
+  export type MessageUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Message to update in case it exists.
+     */
+    where: MessageWhereUniqueInput
+    /**
+     * In case the Message found by the `where` argument doesn't exist, create a new Message with this data.
+     */
+    create: XOR<MessageCreateInput, MessageUncheckedCreateInput>
+    /**
+     * In case the Message was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<MessageUpdateInput, MessageUncheckedUpdateInput>
+  }
+
+  /**
+   * Message delete
+   */
+  export type MessageDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter which Message to delete.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message deleteMany
+   */
+  export type MessageDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Messages to delete
+     */
+    where?: MessageWhereInput
+    /**
+     * Limit how many Messages to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Message without action
+   */
+  export type MessageDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VoiceEvent
+   */
+
+  export type AggregateVoiceEvent = {
+    _count: VoiceEventCountAggregateOutputType | null
+    _min: VoiceEventMinAggregateOutputType | null
+    _max: VoiceEventMaxAggregateOutputType | null
+  }
+
+  export type VoiceEventMinAggregateOutputType = {
+    id: string | null
+    type: string | null
+    userId: string | null
+    roomId: string | null
+    audioData: string | null
+    createdAt: Date | null
+  }
+
+  export type VoiceEventMaxAggregateOutputType = {
+    id: string | null
+    type: string | null
+    userId: string | null
+    roomId: string | null
+    audioData: string | null
+    createdAt: Date | null
+  }
+
+  export type VoiceEventCountAggregateOutputType = {
+    id: number
+    type: number
+    userId: number
+    roomId: number
+    audioData: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type VoiceEventMinAggregateInputType = {
+    id?: true
+    type?: true
+    userId?: true
+    roomId?: true
+    audioData?: true
+    createdAt?: true
+  }
+
+  export type VoiceEventMaxAggregateInputType = {
+    id?: true
+    type?: true
+    userId?: true
+    roomId?: true
+    audioData?: true
+    createdAt?: true
+  }
+
+  export type VoiceEventCountAggregateInputType = {
+    id?: true
+    type?: true
+    userId?: true
+    roomId?: true
+    audioData?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type VoiceEventAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VoiceEvent to aggregate.
+     */
+    where?: VoiceEventWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VoiceEvents to fetch.
+     */
+    orderBy?: VoiceEventOrderByWithRelationInput | VoiceEventOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VoiceEventWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VoiceEvents from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VoiceEvents.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VoiceEvents
+    **/
+    _count?: true | VoiceEventCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VoiceEventMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VoiceEventMaxAggregateInputType
+  }
+
+  export type GetVoiceEventAggregateType<T extends VoiceEventAggregateArgs> = {
+        [P in keyof T & keyof AggregateVoiceEvent]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVoiceEvent[P]>
+      : GetScalarType<T[P], AggregateVoiceEvent[P]>
+  }
+
+
+
+
+  export type VoiceEventGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VoiceEventWhereInput
+    orderBy?: VoiceEventOrderByWithAggregationInput | VoiceEventOrderByWithAggregationInput[]
+    by: VoiceEventScalarFieldEnum[] | VoiceEventScalarFieldEnum
+    having?: VoiceEventScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VoiceEventCountAggregateInputType | true
+    _min?: VoiceEventMinAggregateInputType
+    _max?: VoiceEventMaxAggregateInputType
+  }
+
+  export type VoiceEventGroupByOutputType = {
+    id: string
+    type: string
+    userId: string
+    roomId: string
+    audioData: string | null
+    createdAt: Date
+    _count: VoiceEventCountAggregateOutputType | null
+    _min: VoiceEventMinAggregateOutputType | null
+    _max: VoiceEventMaxAggregateOutputType | null
+  }
+
+  type GetVoiceEventGroupByPayload<T extends VoiceEventGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VoiceEventGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VoiceEventGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VoiceEventGroupByOutputType[P]>
+            : GetScalarType<T[P], VoiceEventGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VoiceEventSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    type?: boolean
+    userId?: boolean
+    roomId?: boolean
+    audioData?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["voiceEvent"]>
+
+  export type VoiceEventSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    type?: boolean
+    userId?: boolean
+    roomId?: boolean
+    audioData?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["voiceEvent"]>
+
+  export type VoiceEventSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    type?: boolean
+    userId?: boolean
+    roomId?: boolean
+    audioData?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["voiceEvent"]>
+
+  export type VoiceEventSelectScalar = {
+    id?: boolean
+    type?: boolean
+    userId?: boolean
+    roomId?: boolean
+    audioData?: boolean
+    createdAt?: boolean
+  }
+
+  export type VoiceEventOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "type" | "userId" | "roomId" | "audioData" | "createdAt", ExtArgs["result"]["voiceEvent"]>
+  export type VoiceEventInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type VoiceEventIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type VoiceEventIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $VoiceEventPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VoiceEvent"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      type: string
+      userId: string
+      roomId: string
+      audioData: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["voiceEvent"]>
+    composites: {}
+  }
+
+  type VoiceEventGetPayload<S extends boolean | null | undefined | VoiceEventDefaultArgs> = $Result.GetResult<Prisma.$VoiceEventPayload, S>
+
+  type VoiceEventCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<VoiceEventFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: VoiceEventCountAggregateInputType | true
+    }
+
+  export interface VoiceEventDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VoiceEvent'], meta: { name: 'VoiceEvent' } }
+    /**
+     * Find zero or one VoiceEvent that matches the filter.
+     * @param {VoiceEventFindUniqueArgs} args - Arguments to find a VoiceEvent
+     * @example
+     * // Get one VoiceEvent
+     * const voiceEvent = await prisma.voiceEvent.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VoiceEventFindUniqueArgs>(args: SelectSubset<T, VoiceEventFindUniqueArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one VoiceEvent that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {VoiceEventFindUniqueOrThrowArgs} args - Arguments to find a VoiceEvent
+     * @example
+     * // Get one VoiceEvent
+     * const voiceEvent = await prisma.voiceEvent.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VoiceEventFindUniqueOrThrowArgs>(args: SelectSubset<T, VoiceEventFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first VoiceEvent that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoiceEventFindFirstArgs} args - Arguments to find a VoiceEvent
+     * @example
+     * // Get one VoiceEvent
+     * const voiceEvent = await prisma.voiceEvent.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VoiceEventFindFirstArgs>(args?: SelectSubset<T, VoiceEventFindFirstArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first VoiceEvent that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoiceEventFindFirstOrThrowArgs} args - Arguments to find a VoiceEvent
+     * @example
+     * // Get one VoiceEvent
+     * const voiceEvent = await prisma.voiceEvent.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VoiceEventFindFirstOrThrowArgs>(args?: SelectSubset<T, VoiceEventFindFirstOrThrowArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more VoiceEvents that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoiceEventFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VoiceEvents
+     * const voiceEvents = await prisma.voiceEvent.findMany()
+     * 
+     * // Get first 10 VoiceEvents
+     * const voiceEvents = await prisma.voiceEvent.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const voiceEventWithIdOnly = await prisma.voiceEvent.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VoiceEventFindManyArgs>(args?: SelectSubset<T, VoiceEventFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a VoiceEvent.
+     * @param {VoiceEventCreateArgs} args - Arguments to create a VoiceEvent.
+     * @example
+     * // Create one VoiceEvent
+     * const VoiceEvent = await prisma.voiceEvent.create({
+     *   data: {
+     *     // ... data to create a VoiceEvent
+     *   }
+     * })
+     * 
+     */
+    create<T extends VoiceEventCreateArgs>(args: SelectSubset<T, VoiceEventCreateArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many VoiceEvents.
+     * @param {VoiceEventCreateManyArgs} args - Arguments to create many VoiceEvents.
+     * @example
+     * // Create many VoiceEvents
+     * const voiceEvent = await prisma.voiceEvent.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VoiceEventCreateManyArgs>(args?: SelectSubset<T, VoiceEventCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VoiceEvents and returns the data saved in the database.
+     * @param {VoiceEventCreateManyAndReturnArgs} args - Arguments to create many VoiceEvents.
+     * @example
+     * // Create many VoiceEvents
+     * const voiceEvent = await prisma.voiceEvent.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VoiceEvents and only return the `id`
+     * const voiceEventWithIdOnly = await prisma.voiceEvent.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VoiceEventCreateManyAndReturnArgs>(args?: SelectSubset<T, VoiceEventCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a VoiceEvent.
+     * @param {VoiceEventDeleteArgs} args - Arguments to delete one VoiceEvent.
+     * @example
+     * // Delete one VoiceEvent
+     * const VoiceEvent = await prisma.voiceEvent.delete({
+     *   where: {
+     *     // ... filter to delete one VoiceEvent
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VoiceEventDeleteArgs>(args: SelectSubset<T, VoiceEventDeleteArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one VoiceEvent.
+     * @param {VoiceEventUpdateArgs} args - Arguments to update one VoiceEvent.
+     * @example
+     * // Update one VoiceEvent
+     * const voiceEvent = await prisma.voiceEvent.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VoiceEventUpdateArgs>(args: SelectSubset<T, VoiceEventUpdateArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more VoiceEvents.
+     * @param {VoiceEventDeleteManyArgs} args - Arguments to filter VoiceEvents to delete.
+     * @example
+     * // Delete a few VoiceEvents
+     * const { count } = await prisma.voiceEvent.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VoiceEventDeleteManyArgs>(args?: SelectSubset<T, VoiceEventDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VoiceEvents.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoiceEventUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VoiceEvents
+     * const voiceEvent = await prisma.voiceEvent.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VoiceEventUpdateManyArgs>(args: SelectSubset<T, VoiceEventUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VoiceEvents and returns the data updated in the database.
+     * @param {VoiceEventUpdateManyAndReturnArgs} args - Arguments to update many VoiceEvents.
+     * @example
+     * // Update many VoiceEvents
+     * const voiceEvent = await prisma.voiceEvent.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more VoiceEvents and only return the `id`
+     * const voiceEventWithIdOnly = await prisma.voiceEvent.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends VoiceEventUpdateManyAndReturnArgs>(args: SelectSubset<T, VoiceEventUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one VoiceEvent.
+     * @param {VoiceEventUpsertArgs} args - Arguments to update or create a VoiceEvent.
+     * @example
+     * // Update or create a VoiceEvent
+     * const voiceEvent = await prisma.voiceEvent.upsert({
+     *   create: {
+     *     // ... data to create a VoiceEvent
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VoiceEvent we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VoiceEventUpsertArgs>(args: SelectSubset<T, VoiceEventUpsertArgs<ExtArgs>>): Prisma__VoiceEventClient<$Result.GetResult<Prisma.$VoiceEventPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of VoiceEvents.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoiceEventCountArgs} args - Arguments to filter VoiceEvents to count.
+     * @example
+     * // Count the number of VoiceEvents
+     * const count = await prisma.voiceEvent.count({
+     *   where: {
+     *     // ... the filter for the VoiceEvents we want to count
+     *   }
+     * })
+    **/
+    count<T extends VoiceEventCountArgs>(
+      args?: Subset<T, VoiceEventCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VoiceEventCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VoiceEvent.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoiceEventAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VoiceEventAggregateArgs>(args: Subset<T, VoiceEventAggregateArgs>): Prisma.PrismaPromise<GetVoiceEventAggregateType<T>>
+
+    /**
+     * Group by VoiceEvent.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoiceEventGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VoiceEventGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VoiceEventGroupByArgs['orderBy'] }
+        : { orderBy?: VoiceEventGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VoiceEventGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVoiceEventGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VoiceEvent model
+   */
+  readonly fields: VoiceEventFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VoiceEvent.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VoiceEventClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VoiceEvent model
+   */
+  interface VoiceEventFieldRefs {
+    readonly id: FieldRef<"VoiceEvent", 'String'>
+    readonly type: FieldRef<"VoiceEvent", 'String'>
+    readonly userId: FieldRef<"VoiceEvent", 'String'>
+    readonly roomId: FieldRef<"VoiceEvent", 'String'>
+    readonly audioData: FieldRef<"VoiceEvent", 'String'>
+    readonly createdAt: FieldRef<"VoiceEvent", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VoiceEvent findUnique
+   */
+  export type VoiceEventFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * Filter, which VoiceEvent to fetch.
+     */
+    where: VoiceEventWhereUniqueInput
+  }
+
+  /**
+   * VoiceEvent findUniqueOrThrow
+   */
+  export type VoiceEventFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * Filter, which VoiceEvent to fetch.
+     */
+    where: VoiceEventWhereUniqueInput
+  }
+
+  /**
+   * VoiceEvent findFirst
+   */
+  export type VoiceEventFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * Filter, which VoiceEvent to fetch.
+     */
+    where?: VoiceEventWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VoiceEvents to fetch.
+     */
+    orderBy?: VoiceEventOrderByWithRelationInput | VoiceEventOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VoiceEvents.
+     */
+    cursor?: VoiceEventWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VoiceEvents from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VoiceEvents.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VoiceEvents.
+     */
+    distinct?: VoiceEventScalarFieldEnum | VoiceEventScalarFieldEnum[]
+  }
+
+  /**
+   * VoiceEvent findFirstOrThrow
+   */
+  export type VoiceEventFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * Filter, which VoiceEvent to fetch.
+     */
+    where?: VoiceEventWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VoiceEvents to fetch.
+     */
+    orderBy?: VoiceEventOrderByWithRelationInput | VoiceEventOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VoiceEvents.
+     */
+    cursor?: VoiceEventWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VoiceEvents from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VoiceEvents.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VoiceEvents.
+     */
+    distinct?: VoiceEventScalarFieldEnum | VoiceEventScalarFieldEnum[]
+  }
+
+  /**
+   * VoiceEvent findMany
+   */
+  export type VoiceEventFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * Filter, which VoiceEvents to fetch.
+     */
+    where?: VoiceEventWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VoiceEvents to fetch.
+     */
+    orderBy?: VoiceEventOrderByWithRelationInput | VoiceEventOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VoiceEvents.
+     */
+    cursor?: VoiceEventWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VoiceEvents from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VoiceEvents.
+     */
+    skip?: number
+    distinct?: VoiceEventScalarFieldEnum | VoiceEventScalarFieldEnum[]
+  }
+
+  /**
+   * VoiceEvent create
+   */
+  export type VoiceEventCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VoiceEvent.
+     */
+    data: XOR<VoiceEventCreateInput, VoiceEventUncheckedCreateInput>
+  }
+
+  /**
+   * VoiceEvent createMany
+   */
+  export type VoiceEventCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VoiceEvents.
+     */
+    data: VoiceEventCreateManyInput | VoiceEventCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VoiceEvent createManyAndReturn
+   */
+  export type VoiceEventCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * The data used to create many VoiceEvents.
+     */
+    data: VoiceEventCreateManyInput | VoiceEventCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VoiceEvent update
+   */
+  export type VoiceEventUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VoiceEvent.
+     */
+    data: XOR<VoiceEventUpdateInput, VoiceEventUncheckedUpdateInput>
+    /**
+     * Choose, which VoiceEvent to update.
+     */
+    where: VoiceEventWhereUniqueInput
+  }
+
+  /**
+   * VoiceEvent updateMany
+   */
+  export type VoiceEventUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VoiceEvents.
+     */
+    data: XOR<VoiceEventUpdateManyMutationInput, VoiceEventUncheckedUpdateManyInput>
+    /**
+     * Filter which VoiceEvents to update
+     */
+    where?: VoiceEventWhereInput
+    /**
+     * Limit how many VoiceEvents to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * VoiceEvent updateManyAndReturn
+   */
+  export type VoiceEventUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * The data used to update VoiceEvents.
+     */
+    data: XOR<VoiceEventUpdateManyMutationInput, VoiceEventUncheckedUpdateManyInput>
+    /**
+     * Filter which VoiceEvents to update
+     */
+    where?: VoiceEventWhereInput
+    /**
+     * Limit how many VoiceEvents to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * VoiceEvent upsert
+   */
+  export type VoiceEventUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VoiceEvent to update in case it exists.
+     */
+    where: VoiceEventWhereUniqueInput
+    /**
+     * In case the VoiceEvent found by the `where` argument doesn't exist, create a new VoiceEvent with this data.
+     */
+    create: XOR<VoiceEventCreateInput, VoiceEventUncheckedCreateInput>
+    /**
+     * In case the VoiceEvent was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VoiceEventUpdateInput, VoiceEventUncheckedUpdateInput>
+  }
+
+  /**
+   * VoiceEvent delete
+   */
+  export type VoiceEventDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+    /**
+     * Filter which VoiceEvent to delete.
+     */
+    where: VoiceEventWhereUniqueInput
+  }
+
+  /**
+   * VoiceEvent deleteMany
+   */
+  export type VoiceEventDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VoiceEvents to delete
+     */
+    where?: VoiceEventWhereInput
+    /**
+     * Limit how many VoiceEvents to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * VoiceEvent without action
+   */
+  export type VoiceEventDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VoiceEvent
+     */
+    select?: VoiceEventSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VoiceEvent
+     */
+    omit?: VoiceEventOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoiceEventInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -10939,6 +13363,32 @@ export namespace Prisma {
   };
 
   export type SkipVoteScalarFieldEnum = (typeof SkipVoteScalarFieldEnum)[keyof typeof SkipVoteScalarFieldEnum]
+
+
+  export const MessageScalarFieldEnum: {
+    id: 'id',
+    content: 'content',
+    type: 'type',
+    userId: 'userId',
+    userName: 'userName',
+    userImage: 'userImage',
+    roomId: 'roomId',
+    createdAt: 'createdAt'
+  };
+
+  export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
+
+  export const VoiceEventScalarFieldEnum: {
+    id: 'id',
+    type: 'type',
+    userId: 'userId',
+    roomId: 'roomId',
+    audioData: 'audioData',
+    createdAt: 'createdAt'
+  };
+
+  export type VoiceEventScalarFieldEnum = (typeof VoiceEventScalarFieldEnum)[keyof typeof VoiceEventScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -11094,6 +13544,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteListRelationFilter
     Streams?: StreamListRelationFilter
     upvotes?: UpvoteListRelationFilter
+    Messages?: MessageListRelationFilter
+    VoiceEvents?: VoiceEventListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -11109,6 +13561,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteOrderByRelationAggregateInput
     Streams?: StreamOrderByRelationAggregateInput
     upvotes?: UpvoteOrderByRelationAggregateInput
+    Messages?: MessageOrderByRelationAggregateInput
+    VoiceEvents?: VoiceEventOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -11127,6 +13581,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteListRelationFilter
     Streams?: StreamListRelationFilter
     upvotes?: UpvoteListRelationFilter
+    Messages?: MessageListRelationFilter
+    VoiceEvents?: VoiceEventListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -11622,6 +14078,136 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"SkipVote"> | Date | string
   }
 
+  export type MessageWhereInput = {
+    AND?: MessageWhereInput | MessageWhereInput[]
+    OR?: MessageWhereInput[]
+    NOT?: MessageWhereInput | MessageWhereInput[]
+    id?: StringFilter<"Message"> | string
+    content?: StringFilter<"Message"> | string
+    type?: StringFilter<"Message"> | string
+    userId?: StringFilter<"Message"> | string
+    userName?: StringNullableFilter<"Message"> | string | null
+    userImage?: StringNullableFilter<"Message"> | string | null
+    roomId?: StringFilter<"Message"> | string
+    createdAt?: DateTimeFilter<"Message"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type MessageOrderByWithRelationInput = {
+    id?: SortOrder
+    content?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrderInput | SortOrder
+    userImage?: SortOrderInput | SortOrder
+    roomId?: SortOrder
+    createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type MessageWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: MessageWhereInput | MessageWhereInput[]
+    OR?: MessageWhereInput[]
+    NOT?: MessageWhereInput | MessageWhereInput[]
+    content?: StringFilter<"Message"> | string
+    type?: StringFilter<"Message"> | string
+    userId?: StringFilter<"Message"> | string
+    userName?: StringNullableFilter<"Message"> | string | null
+    userImage?: StringNullableFilter<"Message"> | string | null
+    roomId?: StringFilter<"Message"> | string
+    createdAt?: DateTimeFilter<"Message"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type MessageOrderByWithAggregationInput = {
+    id?: SortOrder
+    content?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrderInput | SortOrder
+    userImage?: SortOrderInput | SortOrder
+    roomId?: SortOrder
+    createdAt?: SortOrder
+    _count?: MessageCountOrderByAggregateInput
+    _max?: MessageMaxOrderByAggregateInput
+    _min?: MessageMinOrderByAggregateInput
+  }
+
+  export type MessageScalarWhereWithAggregatesInput = {
+    AND?: MessageScalarWhereWithAggregatesInput | MessageScalarWhereWithAggregatesInput[]
+    OR?: MessageScalarWhereWithAggregatesInput[]
+    NOT?: MessageScalarWhereWithAggregatesInput | MessageScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Message"> | string
+    content?: StringWithAggregatesFilter<"Message"> | string
+    type?: StringWithAggregatesFilter<"Message"> | string
+    userId?: StringWithAggregatesFilter<"Message"> | string
+    userName?: StringNullableWithAggregatesFilter<"Message"> | string | null
+    userImage?: StringNullableWithAggregatesFilter<"Message"> | string | null
+    roomId?: StringWithAggregatesFilter<"Message"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"Message"> | Date | string
+  }
+
+  export type VoiceEventWhereInput = {
+    AND?: VoiceEventWhereInput | VoiceEventWhereInput[]
+    OR?: VoiceEventWhereInput[]
+    NOT?: VoiceEventWhereInput | VoiceEventWhereInput[]
+    id?: StringFilter<"VoiceEvent"> | string
+    type?: StringFilter<"VoiceEvent"> | string
+    userId?: StringFilter<"VoiceEvent"> | string
+    roomId?: StringFilter<"VoiceEvent"> | string
+    audioData?: StringNullableFilter<"VoiceEvent"> | string | null
+    createdAt?: DateTimeFilter<"VoiceEvent"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type VoiceEventOrderByWithRelationInput = {
+    id?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    roomId?: SortOrder
+    audioData?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type VoiceEventWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: VoiceEventWhereInput | VoiceEventWhereInput[]
+    OR?: VoiceEventWhereInput[]
+    NOT?: VoiceEventWhereInput | VoiceEventWhereInput[]
+    type?: StringFilter<"VoiceEvent"> | string
+    userId?: StringFilter<"VoiceEvent"> | string
+    roomId?: StringFilter<"VoiceEvent"> | string
+    audioData?: StringNullableFilter<"VoiceEvent"> | string | null
+    createdAt?: DateTimeFilter<"VoiceEvent"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type VoiceEventOrderByWithAggregationInput = {
+    id?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    roomId?: SortOrder
+    audioData?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: VoiceEventCountOrderByAggregateInput
+    _max?: VoiceEventMaxOrderByAggregateInput
+    _min?: VoiceEventMinOrderByAggregateInput
+  }
+
+  export type VoiceEventScalarWhereWithAggregatesInput = {
+    AND?: VoiceEventScalarWhereWithAggregatesInput | VoiceEventScalarWhereWithAggregatesInput[]
+    OR?: VoiceEventScalarWhereWithAggregatesInput[]
+    NOT?: VoiceEventScalarWhereWithAggregatesInput | VoiceEventScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"VoiceEvent"> | string
+    type?: StringWithAggregatesFilter<"VoiceEvent"> | string
+    userId?: StringWithAggregatesFilter<"VoiceEvent"> | string
+    roomId?: StringWithAggregatesFilter<"VoiceEvent"> | string
+    audioData?: StringNullableWithAggregatesFilter<"VoiceEvent"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"VoiceEvent"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     email: string
@@ -11635,6 +14221,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
     Streams?: StreamCreateNestedManyWithoutUserInput
     upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -11650,6 +14238,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
     Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
     upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -11665,6 +14255,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
     Streams?: StreamUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -11680,6 +14272,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
     Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -12161,6 +14755,144 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type MessageCreateInput = {
+    id?: string
+    content: string
+    type?: string
+    userName?: string | null
+    userImage?: string | null
+    roomId: string
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutMessagesInput
+  }
+
+  export type MessageUncheckedCreateInput = {
+    id?: string
+    content: string
+    type?: string
+    userId: string
+    userName?: string | null
+    userImage?: string | null
+    roomId: string
+    createdAt?: Date | string
+  }
+
+  export type MessageUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
+    userImage?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutMessagesNestedInput
+  }
+
+  export type MessageUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
+    userImage?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageCreateManyInput = {
+    id?: string
+    content: string
+    type?: string
+    userId: string
+    userName?: string | null
+    userImage?: string | null
+    roomId: string
+    createdAt?: Date | string
+  }
+
+  export type MessageUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
+    userImage?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
+    userImage?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VoiceEventCreateInput = {
+    id?: string
+    type: string
+    roomId: string
+    audioData?: string | null
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutVoiceEventsInput
+  }
+
+  export type VoiceEventUncheckedCreateInput = {
+    id?: string
+    type: string
+    userId: string
+    roomId: string
+    audioData?: string | null
+    createdAt?: Date | string
+  }
+
+  export type VoiceEventUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    roomId?: StringFieldUpdateOperationsInput | string
+    audioData?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutVoiceEventsNestedInput
+  }
+
+  export type VoiceEventUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    roomId?: StringFieldUpdateOperationsInput | string
+    audioData?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VoiceEventCreateManyInput = {
+    id?: string
+    type: string
+    userId: string
+    roomId: string
+    audioData?: string | null
+    createdAt?: Date | string
+  }
+
+  export type VoiceEventUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    roomId?: StringFieldUpdateOperationsInput | string
+    audioData?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VoiceEventUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    roomId?: StringFieldUpdateOperationsInput | string
+    audioData?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -12240,6 +14972,18 @@ export namespace Prisma {
     none?: UpvoteWhereInput
   }
 
+  export type MessageListRelationFilter = {
+    every?: MessageWhereInput
+    some?: MessageWhereInput
+    none?: MessageWhereInput
+  }
+
+  export type VoiceEventListRelationFilter = {
+    every?: VoiceEventWhereInput
+    some?: VoiceEventWhereInput
+    none?: VoiceEventWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -12270,6 +15014,14 @@ export namespace Prisma {
   }
 
   export type UpvoteOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type MessageOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VoiceEventOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -12749,6 +15501,66 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
+  export type MessageCountOrderByAggregateInput = {
+    id?: SortOrder
+    content?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrder
+    userImage?: SortOrder
+    roomId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MessageMaxOrderByAggregateInput = {
+    id?: SortOrder
+    content?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrder
+    userImage?: SortOrder
+    roomId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MessageMinOrderByAggregateInput = {
+    id?: SortOrder
+    content?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrder
+    userImage?: SortOrder
+    roomId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VoiceEventCountOrderByAggregateInput = {
+    id?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    roomId?: SortOrder
+    audioData?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VoiceEventMaxOrderByAggregateInput = {
+    id?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    roomId?: SortOrder
+    audioData?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VoiceEventMinOrderByAggregateInput = {
+    id?: SortOrder
+    type?: SortOrder
+    userId?: SortOrder
+    roomId?: SortOrder
+    audioData?: SortOrder
+    createdAt?: SortOrder
+  }
+
   export type RoomCreateNestedManyWithoutCreatorInput = {
     create?: XOR<RoomCreateWithoutCreatorInput, RoomUncheckedCreateWithoutCreatorInput> | RoomCreateWithoutCreatorInput[] | RoomUncheckedCreateWithoutCreatorInput[]
     connectOrCreate?: RoomCreateOrConnectWithoutCreatorInput | RoomCreateOrConnectWithoutCreatorInput[]
@@ -12798,6 +15610,20 @@ export namespace Prisma {
     connect?: UpvoteWhereUniqueInput | UpvoteWhereUniqueInput[]
   }
 
+  export type MessageCreateNestedManyWithoutUserInput = {
+    create?: XOR<MessageCreateWithoutUserInput, MessageUncheckedCreateWithoutUserInput> | MessageCreateWithoutUserInput[] | MessageUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutUserInput | MessageCreateOrConnectWithoutUserInput[]
+    createMany?: MessageCreateManyUserInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type VoiceEventCreateNestedManyWithoutUserInput = {
+    create?: XOR<VoiceEventCreateWithoutUserInput, VoiceEventUncheckedCreateWithoutUserInput> | VoiceEventCreateWithoutUserInput[] | VoiceEventUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: VoiceEventCreateOrConnectWithoutUserInput | VoiceEventCreateOrConnectWithoutUserInput[]
+    createMany?: VoiceEventCreateManyUserInputEnvelope
+    connect?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+  }
+
   export type RoomUncheckedCreateNestedManyWithoutCreatorInput = {
     create?: XOR<RoomCreateWithoutCreatorInput, RoomUncheckedCreateWithoutCreatorInput> | RoomCreateWithoutCreatorInput[] | RoomUncheckedCreateWithoutCreatorInput[]
     connectOrCreate?: RoomCreateOrConnectWithoutCreatorInput | RoomCreateOrConnectWithoutCreatorInput[]
@@ -12845,6 +15671,20 @@ export namespace Prisma {
     connectOrCreate?: UpvoteCreateOrConnectWithoutUserInput | UpvoteCreateOrConnectWithoutUserInput[]
     createMany?: UpvoteCreateManyUserInputEnvelope
     connect?: UpvoteWhereUniqueInput | UpvoteWhereUniqueInput[]
+  }
+
+  export type MessageUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<MessageCreateWithoutUserInput, MessageUncheckedCreateWithoutUserInput> | MessageCreateWithoutUserInput[] | MessageUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutUserInput | MessageCreateOrConnectWithoutUserInput[]
+    createMany?: MessageCreateManyUserInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type VoiceEventUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<VoiceEventCreateWithoutUserInput, VoiceEventUncheckedCreateWithoutUserInput> | VoiceEventCreateWithoutUserInput[] | VoiceEventUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: VoiceEventCreateOrConnectWithoutUserInput | VoiceEventCreateOrConnectWithoutUserInput[]
+    createMany?: VoiceEventCreateManyUserInputEnvelope
+    connect?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -12957,6 +15797,34 @@ export namespace Prisma {
     deleteMany?: UpvoteScalarWhereInput | UpvoteScalarWhereInput[]
   }
 
+  export type MessageUpdateManyWithoutUserNestedInput = {
+    create?: XOR<MessageCreateWithoutUserInput, MessageUncheckedCreateWithoutUserInput> | MessageCreateWithoutUserInput[] | MessageUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutUserInput | MessageCreateOrConnectWithoutUserInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutUserInput | MessageUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: MessageCreateManyUserInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutUserInput | MessageUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutUserInput | MessageUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type VoiceEventUpdateManyWithoutUserNestedInput = {
+    create?: XOR<VoiceEventCreateWithoutUserInput, VoiceEventUncheckedCreateWithoutUserInput> | VoiceEventCreateWithoutUserInput[] | VoiceEventUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: VoiceEventCreateOrConnectWithoutUserInput | VoiceEventCreateOrConnectWithoutUserInput[]
+    upsert?: VoiceEventUpsertWithWhereUniqueWithoutUserInput | VoiceEventUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: VoiceEventCreateManyUserInputEnvelope
+    set?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    disconnect?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    delete?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    connect?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    update?: VoiceEventUpdateWithWhereUniqueWithoutUserInput | VoiceEventUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: VoiceEventUpdateManyWithWhereWithoutUserInput | VoiceEventUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: VoiceEventScalarWhereInput | VoiceEventScalarWhereInput[]
+  }
+
   export type RoomUncheckedUpdateManyWithoutCreatorNestedInput = {
     create?: XOR<RoomCreateWithoutCreatorInput, RoomUncheckedCreateWithoutCreatorInput> | RoomCreateWithoutCreatorInput[] | RoomUncheckedCreateWithoutCreatorInput[]
     connectOrCreate?: RoomCreateOrConnectWithoutCreatorInput | RoomCreateOrConnectWithoutCreatorInput[]
@@ -13053,6 +15921,34 @@ export namespace Prisma {
     update?: UpvoteUpdateWithWhereUniqueWithoutUserInput | UpvoteUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: UpvoteUpdateManyWithWhereWithoutUserInput | UpvoteUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: UpvoteScalarWhereInput | UpvoteScalarWhereInput[]
+  }
+
+  export type MessageUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<MessageCreateWithoutUserInput, MessageUncheckedCreateWithoutUserInput> | MessageCreateWithoutUserInput[] | MessageUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutUserInput | MessageCreateOrConnectWithoutUserInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutUserInput | MessageUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: MessageCreateManyUserInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutUserInput | MessageUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutUserInput | MessageUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type VoiceEventUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<VoiceEventCreateWithoutUserInput, VoiceEventUncheckedCreateWithoutUserInput> | VoiceEventCreateWithoutUserInput[] | VoiceEventUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: VoiceEventCreateOrConnectWithoutUserInput | VoiceEventCreateOrConnectWithoutUserInput[]
+    upsert?: VoiceEventUpsertWithWhereUniqueWithoutUserInput | VoiceEventUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: VoiceEventCreateManyUserInputEnvelope
+    set?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    disconnect?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    delete?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    connect?: VoiceEventWhereUniqueInput | VoiceEventWhereUniqueInput[]
+    update?: VoiceEventUpdateWithWhereUniqueWithoutUserInput | VoiceEventUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: VoiceEventUpdateManyWithWhereWithoutUserInput | VoiceEventUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: VoiceEventScalarWhereInput | VoiceEventScalarWhereInput[]
   }
 
   export type RoomStreamCreateNestedManyWithoutStreamInput = {
@@ -13583,6 +16479,34 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSkipVotesInput, UserUpdateWithoutSkipVotesInput>, UserUncheckedUpdateWithoutSkipVotesInput>
   }
 
+  export type UserCreateNestedOneWithoutMessagesInput = {
+    create?: XOR<UserCreateWithoutMessagesInput, UserUncheckedCreateWithoutMessagesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutMessagesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutMessagesNestedInput = {
+    create?: XOR<UserCreateWithoutMessagesInput, UserUncheckedCreateWithoutMessagesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutMessagesInput
+    upsert?: UserUpsertWithoutMessagesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutMessagesInput, UserUpdateWithoutMessagesInput>, UserUncheckedUpdateWithoutMessagesInput>
+  }
+
+  export type UserCreateNestedOneWithoutVoiceEventsInput = {
+    create?: XOR<UserCreateWithoutVoiceEventsInput, UserUncheckedCreateWithoutVoiceEventsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutVoiceEventsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutVoiceEventsNestedInput = {
+    create?: XOR<UserCreateWithoutVoiceEventsInput, UserUncheckedCreateWithoutVoiceEventsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutVoiceEventsInput
+    upsert?: UserUpsertWithoutVoiceEventsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutVoiceEventsInput, UserUpdateWithoutVoiceEventsInput>, UserUncheckedUpdateWithoutVoiceEventsInput>
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -14031,6 +16955,62 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type MessageCreateWithoutUserInput = {
+    id?: string
+    content: string
+    type?: string
+    userName?: string | null
+    userImage?: string | null
+    roomId: string
+    createdAt?: Date | string
+  }
+
+  export type MessageUncheckedCreateWithoutUserInput = {
+    id?: string
+    content: string
+    type?: string
+    userName?: string | null
+    userImage?: string | null
+    roomId: string
+    createdAt?: Date | string
+  }
+
+  export type MessageCreateOrConnectWithoutUserInput = {
+    where: MessageWhereUniqueInput
+    create: XOR<MessageCreateWithoutUserInput, MessageUncheckedCreateWithoutUserInput>
+  }
+
+  export type MessageCreateManyUserInputEnvelope = {
+    data: MessageCreateManyUserInput | MessageCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type VoiceEventCreateWithoutUserInput = {
+    id?: string
+    type: string
+    roomId: string
+    audioData?: string | null
+    createdAt?: Date | string
+  }
+
+  export type VoiceEventUncheckedCreateWithoutUserInput = {
+    id?: string
+    type: string
+    roomId: string
+    audioData?: string | null
+    createdAt?: Date | string
+  }
+
+  export type VoiceEventCreateOrConnectWithoutUserInput = {
+    where: VoiceEventWhereUniqueInput
+    create: XOR<VoiceEventCreateWithoutUserInput, VoiceEventUncheckedCreateWithoutUserInput>
+  }
+
+  export type VoiceEventCreateManyUserInputEnvelope = {
+    data: VoiceEventCreateManyUserInput | VoiceEventCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type RoomUpsertWithWhereUniqueWithoutCreatorInput = {
     where: RoomWhereUniqueInput
     update: XOR<RoomUpdateWithoutCreatorInput, RoomUncheckedUpdateWithoutCreatorInput>
@@ -14227,6 +17207,64 @@ export namespace Prisma {
     StreamId?: StringFilter<"Upvote"> | string
   }
 
+  export type MessageUpsertWithWhereUniqueWithoutUserInput = {
+    where: MessageWhereUniqueInput
+    update: XOR<MessageUpdateWithoutUserInput, MessageUncheckedUpdateWithoutUserInput>
+    create: XOR<MessageCreateWithoutUserInput, MessageUncheckedCreateWithoutUserInput>
+  }
+
+  export type MessageUpdateWithWhereUniqueWithoutUserInput = {
+    where: MessageWhereUniqueInput
+    data: XOR<MessageUpdateWithoutUserInput, MessageUncheckedUpdateWithoutUserInput>
+  }
+
+  export type MessageUpdateManyWithWhereWithoutUserInput = {
+    where: MessageScalarWhereInput
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type MessageScalarWhereInput = {
+    AND?: MessageScalarWhereInput | MessageScalarWhereInput[]
+    OR?: MessageScalarWhereInput[]
+    NOT?: MessageScalarWhereInput | MessageScalarWhereInput[]
+    id?: StringFilter<"Message"> | string
+    content?: StringFilter<"Message"> | string
+    type?: StringFilter<"Message"> | string
+    userId?: StringFilter<"Message"> | string
+    userName?: StringNullableFilter<"Message"> | string | null
+    userImage?: StringNullableFilter<"Message"> | string | null
+    roomId?: StringFilter<"Message"> | string
+    createdAt?: DateTimeFilter<"Message"> | Date | string
+  }
+
+  export type VoiceEventUpsertWithWhereUniqueWithoutUserInput = {
+    where: VoiceEventWhereUniqueInput
+    update: XOR<VoiceEventUpdateWithoutUserInput, VoiceEventUncheckedUpdateWithoutUserInput>
+    create: XOR<VoiceEventCreateWithoutUserInput, VoiceEventUncheckedCreateWithoutUserInput>
+  }
+
+  export type VoiceEventUpdateWithWhereUniqueWithoutUserInput = {
+    where: VoiceEventWhereUniqueInput
+    data: XOR<VoiceEventUpdateWithoutUserInput, VoiceEventUncheckedUpdateWithoutUserInput>
+  }
+
+  export type VoiceEventUpdateManyWithWhereWithoutUserInput = {
+    where: VoiceEventScalarWhereInput
+    data: XOR<VoiceEventUpdateManyMutationInput, VoiceEventUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type VoiceEventScalarWhereInput = {
+    AND?: VoiceEventScalarWhereInput | VoiceEventScalarWhereInput[]
+    OR?: VoiceEventScalarWhereInput[]
+    NOT?: VoiceEventScalarWhereInput | VoiceEventScalarWhereInput[]
+    id?: StringFilter<"VoiceEvent"> | string
+    type?: StringFilter<"VoiceEvent"> | string
+    userId?: StringFilter<"VoiceEvent"> | string
+    roomId?: StringFilter<"VoiceEvent"> | string
+    audioData?: StringNullableFilter<"VoiceEvent"> | string | null
+    createdAt?: DateTimeFilter<"VoiceEvent"> | Date | string
+  }
+
   export type RoomStreamCreateWithoutStreamInput = {
     id?: string
     addedAt?: Date | string
@@ -14271,6 +17309,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteCreateNestedManyWithoutUserInput
     skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
     upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutStreamsInput = {
@@ -14285,6 +17325,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUncheckedCreateNestedManyWithoutUserInput
     skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
     upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutStreamsInput = {
@@ -14351,6 +17393,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUpdateManyWithoutUserNestedInput
     skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutStreamsInput = {
@@ -14365,6 +17409,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUncheckedUpdateManyWithoutUserNestedInput
     skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UpvoteUpsertWithWhereUniqueWithoutStreamInput = {
@@ -14426,6 +17472,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteCreateNestedManyWithoutUserInput
     skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
     Streams?: StreamCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutUpvotesInput = {
@@ -14440,6 +17488,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUncheckedCreateNestedManyWithoutUserInput
     skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
     Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutUpvotesInput = {
@@ -14507,6 +17557,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUpdateManyWithoutUserNestedInput
     skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
     Streams?: StreamUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutUpvotesInput = {
@@ -14521,6 +17573,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUncheckedUpdateManyWithoutUserNestedInput
     skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
     Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutCreatedRoomsInput = {
@@ -14535,6 +17589,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
     Streams?: StreamCreateNestedManyWithoutUserInput
     upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutCreatedRoomsInput = {
@@ -14549,6 +17605,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
     Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
     upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutCreatedRoomsInput = {
@@ -14662,6 +17720,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
     Streams?: StreamUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCreatedRoomsInput = {
@@ -14676,6 +17736,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
     Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type RoomStreamUpsertWithoutCurrentInRoomsInput = {
@@ -14790,6 +17852,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
     Streams?: StreamCreateNestedManyWithoutUserInput
     upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRoomMembersInput = {
@@ -14804,6 +17868,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
     Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
     upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRoomMembersInput = {
@@ -14875,6 +17941,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
     Streams?: StreamUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRoomMembersInput = {
@@ -14889,6 +17957,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
     Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type RoomCreateWithoutCurrentStreamInput = {
@@ -14943,6 +18013,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
     Streams?: StreamCreateNestedManyWithoutUserInput
     upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAddedRoomStreamsInput = {
@@ -14957,6 +18029,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
     Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
     upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAddedRoomStreamsInput = {
@@ -15113,6 +18187,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
     Streams?: StreamUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAddedRoomStreamsInput = {
@@ -15127,6 +18203,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
     Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type RoomUpsertWithoutStreamsInput = {
@@ -15278,6 +18356,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
     Streams?: StreamCreateNestedManyWithoutUserInput
     upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRoomStreamUpvotesInput = {
@@ -15292,6 +18372,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
     Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
     upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRoomStreamUpvotesInput = {
@@ -15355,6 +18437,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
     Streams?: StreamUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRoomStreamUpvotesInput = {
@@ -15369,6 +18453,8 @@ export namespace Prisma {
     skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
     Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type RoomStreamCreateWithoutSkipVotesInput = {
@@ -15410,6 +18496,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteCreateNestedManyWithoutUserInput
     Streams?: StreamCreateNestedManyWithoutUserInput
     upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSkipVotesInput = {
@@ -15424,6 +18512,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUncheckedCreateNestedManyWithoutUserInput
     Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
     upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSkipVotesInput = {
@@ -15487,6 +18577,8 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUpdateManyWithoutUserNestedInput
     Streams?: StreamUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSkipVotesInput = {
@@ -15501,6 +18593,168 @@ export namespace Prisma {
     roomStreamUpvotes?: RoomStreamUpvoteUncheckedUpdateManyWithoutUserNestedInput
     Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
     upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutMessagesInput = {
+    id?: string
+    email: string
+    image?: string | null
+    provider: $Enums.Provider
+    password?: string | null
+    createdRooms?: RoomCreateNestedManyWithoutCreatorInput
+    roomMembers?: RoomMemberCreateNestedManyWithoutUserInput
+    addedRoomStreams?: RoomStreamCreateNestedManyWithoutAddedByInput
+    roomStreamUpvotes?: RoomStreamUpvoteCreateNestedManyWithoutUserInput
+    skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
+    Streams?: StreamCreateNestedManyWithoutUserInput
+    upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutMessagesInput = {
+    id?: string
+    email: string
+    image?: string | null
+    provider: $Enums.Provider
+    password?: string | null
+    createdRooms?: RoomUncheckedCreateNestedManyWithoutCreatorInput
+    roomMembers?: RoomMemberUncheckedCreateNestedManyWithoutUserInput
+    addedRoomStreams?: RoomStreamUncheckedCreateNestedManyWithoutAddedByInput
+    roomStreamUpvotes?: RoomStreamUpvoteUncheckedCreateNestedManyWithoutUserInput
+    skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
+    Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
+    upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    VoiceEvents?: VoiceEventUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutMessagesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutMessagesInput, UserUncheckedCreateWithoutMessagesInput>
+  }
+
+  export type UserUpsertWithoutMessagesInput = {
+    update: XOR<UserUpdateWithoutMessagesInput, UserUncheckedUpdateWithoutMessagesInput>
+    create: XOR<UserCreateWithoutMessagesInput, UserUncheckedCreateWithoutMessagesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutMessagesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutMessagesInput, UserUncheckedUpdateWithoutMessagesInput>
+  }
+
+  export type UserUpdateWithoutMessagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    provider?: EnumProviderFieldUpdateOperationsInput | $Enums.Provider
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    createdRooms?: RoomUpdateManyWithoutCreatorNestedInput
+    roomMembers?: RoomMemberUpdateManyWithoutUserNestedInput
+    addedRoomStreams?: RoomStreamUpdateManyWithoutAddedByNestedInput
+    roomStreamUpvotes?: RoomStreamUpvoteUpdateManyWithoutUserNestedInput
+    skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
+    Streams?: StreamUpdateManyWithoutUserNestedInput
+    upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutMessagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    provider?: EnumProviderFieldUpdateOperationsInput | $Enums.Provider
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    createdRooms?: RoomUncheckedUpdateManyWithoutCreatorNestedInput
+    roomMembers?: RoomMemberUncheckedUpdateManyWithoutUserNestedInput
+    addedRoomStreams?: RoomStreamUncheckedUpdateManyWithoutAddedByNestedInput
+    roomStreamUpvotes?: RoomStreamUpvoteUncheckedUpdateManyWithoutUserNestedInput
+    skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
+    Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
+    upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    VoiceEvents?: VoiceEventUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutVoiceEventsInput = {
+    id?: string
+    email: string
+    image?: string | null
+    provider: $Enums.Provider
+    password?: string | null
+    createdRooms?: RoomCreateNestedManyWithoutCreatorInput
+    roomMembers?: RoomMemberCreateNestedManyWithoutUserInput
+    addedRoomStreams?: RoomStreamCreateNestedManyWithoutAddedByInput
+    roomStreamUpvotes?: RoomStreamUpvoteCreateNestedManyWithoutUserInput
+    skipVotes?: SkipVoteCreateNestedManyWithoutUserInput
+    Streams?: StreamCreateNestedManyWithoutUserInput
+    upvotes?: UpvoteCreateNestedManyWithoutUserInput
+    Messages?: MessageCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutVoiceEventsInput = {
+    id?: string
+    email: string
+    image?: string | null
+    provider: $Enums.Provider
+    password?: string | null
+    createdRooms?: RoomUncheckedCreateNestedManyWithoutCreatorInput
+    roomMembers?: RoomMemberUncheckedCreateNestedManyWithoutUserInput
+    addedRoomStreams?: RoomStreamUncheckedCreateNestedManyWithoutAddedByInput
+    roomStreamUpvotes?: RoomStreamUpvoteUncheckedCreateNestedManyWithoutUserInput
+    skipVotes?: SkipVoteUncheckedCreateNestedManyWithoutUserInput
+    Streams?: StreamUncheckedCreateNestedManyWithoutUserInput
+    upvotes?: UpvoteUncheckedCreateNestedManyWithoutUserInput
+    Messages?: MessageUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutVoiceEventsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutVoiceEventsInput, UserUncheckedCreateWithoutVoiceEventsInput>
+  }
+
+  export type UserUpsertWithoutVoiceEventsInput = {
+    update: XOR<UserUpdateWithoutVoiceEventsInput, UserUncheckedUpdateWithoutVoiceEventsInput>
+    create: XOR<UserCreateWithoutVoiceEventsInput, UserUncheckedCreateWithoutVoiceEventsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutVoiceEventsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutVoiceEventsInput, UserUncheckedUpdateWithoutVoiceEventsInput>
+  }
+
+  export type UserUpdateWithoutVoiceEventsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    provider?: EnumProviderFieldUpdateOperationsInput | $Enums.Provider
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    createdRooms?: RoomUpdateManyWithoutCreatorNestedInput
+    roomMembers?: RoomMemberUpdateManyWithoutUserNestedInput
+    addedRoomStreams?: RoomStreamUpdateManyWithoutAddedByNestedInput
+    roomStreamUpvotes?: RoomStreamUpvoteUpdateManyWithoutUserNestedInput
+    skipVotes?: SkipVoteUpdateManyWithoutUserNestedInput
+    Streams?: StreamUpdateManyWithoutUserNestedInput
+    upvotes?: UpvoteUpdateManyWithoutUserNestedInput
+    Messages?: MessageUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutVoiceEventsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    provider?: EnumProviderFieldUpdateOperationsInput | $Enums.Provider
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    createdRooms?: RoomUncheckedUpdateManyWithoutCreatorNestedInput
+    roomMembers?: RoomMemberUncheckedUpdateManyWithoutUserNestedInput
+    addedRoomStreams?: RoomStreamUncheckedUpdateManyWithoutAddedByNestedInput
+    roomStreamUpvotes?: RoomStreamUpvoteUncheckedUpdateManyWithoutUserNestedInput
+    skipVotes?: SkipVoteUncheckedUpdateManyWithoutUserNestedInput
+    Streams?: StreamUncheckedUpdateManyWithoutUserNestedInput
+    upvotes?: UpvoteUncheckedUpdateManyWithoutUserNestedInput
+    Messages?: MessageUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type RoomCreateManyCreatorInput = {
@@ -15557,6 +18811,24 @@ export namespace Prisma {
   export type UpvoteCreateManyUserInput = {
     id?: string
     StreamId: string
+  }
+
+  export type MessageCreateManyUserInput = {
+    id?: string
+    content: string
+    type?: string
+    userName?: string | null
+    userImage?: string | null
+    roomId: string
+    createdAt?: Date | string
+  }
+
+  export type VoiceEventCreateManyUserInput = {
+    id?: string
+    type: string
+    roomId: string
+    audioData?: string | null
+    createdAt?: Date | string
   }
 
   export type RoomUpdateWithoutCreatorInput = {
@@ -15739,6 +19011,60 @@ export namespace Prisma {
   export type UpvoteUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     StreamId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type MessageUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
+    userImage?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
+    userImage?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
+    userImage?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VoiceEventUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    roomId?: StringFieldUpdateOperationsInput | string
+    audioData?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VoiceEventUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    roomId?: StringFieldUpdateOperationsInput | string
+    audioData?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VoiceEventUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    roomId?: StringFieldUpdateOperationsInput | string
+    audioData?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type RoomStreamCreateManyStreamInput = {

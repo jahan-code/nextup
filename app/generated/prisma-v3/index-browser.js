@@ -192,6 +192,26 @@ exports.Prisma.SkipVoteScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.MessageScalarFieldEnum = {
+  id: 'id',
+  content: 'content',
+  type: 'type',
+  userId: 'userId',
+  userName: 'userName',
+  userImage: 'userImage',
+  roomId: 'roomId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.VoiceEventScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  userId: 'userId',
+  roomId: 'roomId',
+  audioData: 'audioData',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -229,7 +249,9 @@ exports.Prisma.ModelName = {
   RoomMember: 'RoomMember',
   RoomStream: 'RoomStream',
   RoomStreamUpvote: 'RoomStreamUpvote',
-  SkipVote: 'SkipVote'
+  SkipVote: 'SkipVote',
+  Message: 'Message',
+  VoiceEvent: 'VoiceEvent'
 };
 
 /**

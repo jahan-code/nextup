@@ -16,4 +16,5 @@ export const prismaClient =
     errorFormat: "pretty",
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prismaV3 = prismaClient;
+if (process.env.NODE_ENV !== "production")
+  globalForPrisma.prismaV3 = prismaClient;

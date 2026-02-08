@@ -2,9 +2,11 @@
 // Centralized YouTube types are exported via ./youtube
 
 // Re-export all section-specific types
-export * from "./auth";
-export * from "./rooms";
-export * from "./streams";
+export type {
+  Room,
+  RoomMember,
+  RoomMemberRole,
+  User as RoomUser,
+} from "./rooms";
+export type { Stream, Upvote, User as StreamUser } from "./streams";
 export * from "./youtube";
-
-

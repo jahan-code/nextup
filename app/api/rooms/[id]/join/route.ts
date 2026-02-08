@@ -1,15 +1,21 @@
 import { NextRequest } from "next/server";
 import { prismaClient } from "@/src/lib";
-import { getAuthenticatedUser, requireRoomMembership } from "@/src/lib/api/auth/auth-shield";
+import {
+  getAuthenticatedUser,
+  requireRoomMembership,
+} from "@/src/lib/api/auth/auth-shield";
 import { validateParams } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { BusinessLogicError, NotFoundError } from "@/src/lib/api/errors/customErrors";
+import {
+  BusinessLogicError,
+  NotFoundError,
+} from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
-import { RoomMemberRole } from "@/app/generated/prisma-v3";
+import { RoomMemberRole } from "@/src/types/rooms";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -43,10 +49,11 @@ export async function POST(
       where: { roomId },
     });
 
-    const role = memberCount === 0 ? RoomMemberRole.CREATOR : RoomMemberRole.MEMBER;
+    const role =
+      memberCount === 0 ? RoomMemberRole.CREATOR : RoomMemberRole.MEMBER;
 
     // Add user as member
-    await prismaClient.$transaction(async (tx) => {
+    await prismaClient.$transaction(async (tx: any) => {
       await tx.roomMember.create({
         data: {
           roomId,
@@ -65,19 +72,19 @@ export async function POST(
     });
 
     // Initialize Ably for broadcasting
-    const Ably = (await import('ably')).Realtime;
+    const Ably = (await import("ably")).Realtime;
     const apiKey = process.env.NEXT_PUBLIC_ABLY_API_KEY;
     if (apiKey) {
       const ably = new Ably({ key: apiKey });
       const channel = ably.channels.get(`room:${roomId}`);
 
-      await channel.publish('member:joined', {
+      await channel.publish("member:joined", {
         userId: user.id,
         user: {
           id: user.id,
           email: user.email,
-          image: user.image
-        }
+          image: user.image,
+        },
       });
 
       ably.close();
@@ -88,4 +95,3 @@ export async function POST(
     return handleApiError(error, "POST /api/rooms/[id]/join");
   }
 }
-

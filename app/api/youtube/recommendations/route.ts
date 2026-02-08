@@ -3,7 +3,7 @@ import { prismaClient } from "@/src/lib";
 import { getAuthenticatedUser } from "@/src/lib/api/auth/auth-shield";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
 import { rateLimit, RateLimitConfig } from "@/src/lib/api/rateLimit";
-import youtubesearchapi from 'youtube-search-api';
+import youtubesearchapi from "youtube-search-api";
 
 export async function GET(req: NextRequest) {
   const rateLimitResponse = rateLimit(req, RateLimitConfig.YOUTUBE);
@@ -31,20 +31,40 @@ export async function GET(req: NextRequest) {
     }
 
     const streamTitles = userStreams
-      .map((stream) => stream.title)
-      .filter((title) => title && title.trim() !== "")
+      .map((stream: any) => stream.title)
+      .filter((title: any) => title && title.trim() !== "")
       .slice(0, 5);
 
     const searchTerms: string[] = [];
     const basedOnStreams: string[] = [];
 
     if (streamTitles.length > 0) {
-      const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'video', 'official', 'music', 'song'];
-      streamTitles.forEach((title) => {
+      const commonWords = [
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "video",
+        "official",
+        "music",
+        "song",
+      ];
+      streamTitles.forEach((title: any) => {
         const words = title
           .toLowerCase()
           .split(/\s+/)
-          .filter((word) => word.length > 3 && !commonWords.includes(word))
+          .filter((word: any) => word.length > 3 && !commonWords.includes(word))
           .slice(0, 4);
 
         if (words.length > 0) {
@@ -52,7 +72,8 @@ export async function GET(req: NextRequest) {
           searchTerms.push(searchTerm);
           basedOnStreams.push(title);
         } else {
-          const truncatedTitle = title.length > 30 ? title.substring(0, 30) : title;
+          const truncatedTitle =
+            title.length > 30 ? title.substring(0, 30) : title;
           searchTerms.push(truncatedTitle);
           basedOnStreams.push(title);
         }
@@ -72,11 +93,15 @@ export async function GET(req: NextRequest) {
       duration: string;
     }> = [];
     const seenVideoIds = new Set<string>();
-    const userStreamIds = new Set(userStreams.map((s) => s.extractedId));
+    const userStreamIds = new Set(userStreams.map((s: any) => s.extractedId));
 
     for (const searchTerm of searchTerms.slice(0, 3)) {
       try {
-        const results = await youtubesearchapi.GetListByKeyword(searchTerm, false, 10);
+        const results = await youtubesearchapi.GetListByKeyword(
+          searchTerm,
+          false,
+          10,
+        );
 
         if (results.items && results.items.length > 0) {
           for (const item of results.items) {
@@ -87,12 +112,15 @@ export async function GET(req: NextRequest) {
               seenVideoIds.add(videoId);
               allRecommendations.push({
                 id: videoId,
-                title: item.title || 'Untitled',
+                title: item.title || "Untitled",
                 url: `https://www.youtube.com/watch?v=${videoId}`,
                 extractedId: videoId,
-                thumbnail: item.thumbnail?.thumbnails?.[item.thumbnail.thumbnails.length - 1]?.url || '',
-                channelTitle: item.channelTitle || '',
-                duration: item.length?.simpleText || '',
+                thumbnail:
+                  item.thumbnail?.thumbnails?.[
+                    item.thumbnail.thumbnails.length - 1
+                  ]?.url || "",
+                channelTitle: item.channelTitle || "",
+                duration: item.length?.simpleText || "",
               });
             }
           }

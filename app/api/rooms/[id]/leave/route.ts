@@ -3,13 +3,16 @@ import { prismaClient } from "@/src/lib";
 import { getAuthenticatedUser } from "@/src/lib/api/auth";
 import { validateParams } from "@/src/lib/api/validation";
 import { handleApiError, successResponse } from "@/src/lib/api/errors";
-import { AuthorizationError, NotFoundError } from "@/src/lib/api/errors/customErrors";
+import {
+  AuthorizationError,
+  NotFoundError,
+} from "@/src/lib/api/errors/customErrors";
 import { ErrorCode } from "@/src/lib/api/errorConstants";
-import { RoomMemberRole } from "@/app/generated/prisma-v3";
+import { RoomMemberRole } from "@/src/types/rooms";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const user = await getAuthenticatedUser();
@@ -43,7 +46,7 @@ export async function POST(
     const isCreator = room.creatorId === user.id;
 
     // Initialize Ably for broadcasting
-    const Ably = (await import('ably')).Realtime;
+    const Ably = (await import("ably")).Realtime;
     const apiKey = process.env.NEXT_PUBLIC_ABLY_API_KEY;
     let ably: any = null;
     let channel: any = null;
@@ -81,9 +84,9 @@ export async function POST(
 
         // Broadcast room ended
         if (channel) {
-          await channel.publish('room:ended', {
+          await channel.publish("room:ended", {
             roomId,
-            reason: 'creator_left_alone',
+            reason: "creator_left_alone",
           });
           ably.close();
         }
@@ -122,11 +125,11 @@ export async function POST(
 
       // Broadcast creator transfer
       if (channel) {
-        await channel.publish('member:left', {
+        await channel.publish("member:left", {
           userId: user.id,
           isCreator: true,
         });
-        await channel.publish('creator:transferred', {
+        await channel.publish("creator:transferred", {
           oldCreatorId: user.id,
           newCreatorId,
           newCreator: otherMembers[0].user,
@@ -163,9 +166,9 @@ export async function POST(
 
       // Broadcast room ended
       if (channel) {
-        await channel.publish('room:ended', {
+        await channel.publish("room:ended", {
           roomId,
-          reason: 'no_members_left',
+          reason: "no_members_left",
         });
         ably.close();
       }
@@ -178,7 +181,7 @@ export async function POST(
 
     // Broadcast member left
     if (channel) {
-      await channel.publish('member:left', {
+      await channel.publish("member:left", {
         userId: user.id,
         isCreator: false,
       });
@@ -193,4 +196,3 @@ export async function POST(
     return handleApiError(error, "POST /api/rooms/[id]/leave");
   }
 }
-
